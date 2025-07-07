@@ -83,6 +83,24 @@ class WP_News_Source {
         $plugin_api = new WP_News_Source_API($this->get_plugin_name(), $this->get_version());
         
         $this->loader->add_action('rest_api_init', $plugin_api, 'register_routes');
+        
+        // Initialize GitHub updater
+        $this->define_updater_hooks();
+    }
+    
+    /**
+     * Initialize GitHub updater
+     */
+    private function define_updater_hooks() {
+        $plugin_updater = new WP_News_Source_Updater(
+            WP_NEWS_SOURCE_PLUGIN_DIR . 'wp-news-source.php',
+            'zapitz',
+            'wp-news-source',
+            $this->get_version()
+        );
+        
+        // Add AJAX handler for manual update check
+        $this->loader->add_action('wp_ajax_wpns_check_updates', $plugin_updater, 'manual_update_check');
     }
     
     /**

@@ -151,6 +151,32 @@ $min_confidence = get_option('wp_news_source_min_confidence', 30);
             </tr>
         </table>
         
+        <h2><?php _e('Actualizaciones Automáticas', 'wp-news-source'); ?></h2>
+        <table class="form-table">
+            <tr>
+                <th scope="row"><?php _e('Verificar Actualizaciones', 'wp-news-source'); ?></th>
+                <td>
+                    <button type="button" class="button" id="wpns-check-updates-btn">
+                        <span class="dashicons dashicons-update" style="vertical-align: middle;"></span>
+                        <?php _e('Verificar Ahora', 'wp-news-source'); ?>
+                    </button>
+                    <div id="wpns-update-status" style="margin-top: 10px;"></div>
+                    <p class="description">
+                        <?php _e('Verifica manualmente si hay nuevas versiones disponibles en GitHub.', 'wp-news-source'); ?>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row"><?php _e('Versión Actual', 'wp-news-source'); ?></th>
+                <td>
+                    <strong><?php echo WP_NEWS_SOURCE_VERSION; ?></strong>
+                    <p class="description">
+                        <?php _e('Las actualizaciones se verifican automáticamente una vez al día.', 'wp-news-source'); ?>
+                    </p>
+                </td>
+            </tr>
+        </table>
+        
         <h2><?php _e('Importar/Exportar', 'wp-news-source'); ?></h2>
         <table class="form-table">
             <tr>

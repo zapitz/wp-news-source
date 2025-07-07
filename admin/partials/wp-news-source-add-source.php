@@ -42,6 +42,7 @@ if (!current_user_can('manage_news_sources')) {
 
     <div class="wpns-container">
         <main class="wpns-main" id="wpns-main-content">
+            <form id="wpns-add-source-form" method="post">
                 <!-- General Tab -->
                 <div id="general-tab" class="wpns-tab-content active" 
                      role="tabpanel" aria-labelledby="general-tab-button">

@@ -43,12 +43,9 @@ class WP_News_Source_Admin {
         
         wp_localize_script($this->plugin_name, 'wpns_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('wpns_nonce')
-        ));
-        
-        wp_localize_script($this->plugin_name, 'wpApiSettings', array(
-            'root' => esc_url_raw(rest_url()),
-            'nonce' => wp_create_nonce('wp_rest')
+            'nonce' => wp_create_nonce('wpns_nonce'),
+            'rest_url' => esc_url_raw(rest_url()),
+            'rest_nonce' => wp_create_nonce('wp_rest')
         ));
     }
     

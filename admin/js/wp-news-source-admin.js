@@ -216,7 +216,7 @@ window.WPNewsSource = window.WPNewsSource || {};
             }
             
             if (query.length < 2) {
-                $resultsContainer.hide().empty();
+                $resultsContainer.removeClass('show').empty();
                 return;
             }
             
@@ -257,7 +257,7 @@ window.WPNewsSource = window.WPNewsSource || {};
             }
             
             if (query.length < 2) {
-                $resultsContainer.hide().empty();
+                $resultsContainer.removeClass('show').empty();
                 return;
             }
             
@@ -304,16 +304,18 @@ window.WPNewsSource = window.WPNewsSource || {};
      */
     function searchCategories(query, $resultsContainer) {
         $.ajax({
-            url: wpApiSettings.root + 'wp-news-source/v1/categories/search',
+            url: wpns_ajax.rest_url + 'wp-news-source/v1/categories/search',
             type: 'GET',
             data: {
                 search: query,
                 limit: 10
             },
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
+                xhr.setRequestHeader('X-WP-Nonce', wpns_ajax.rest_nonce);
+                $resultsContainer.addClass('loading');
             },
             success: function(response) {
+                $resultsContainer.removeClass('loading');
                 if (response.success && response.categories.length > 0) {
                     var html = '';
                     
@@ -324,13 +326,14 @@ window.WPNewsSource = window.WPNewsSource || {};
                                '</div>';
                     });
                     
-                    $resultsContainer.html(html).show();
+                    $resultsContainer.html(html).addClass('show');
                 } else {
-                    $resultsContainer.html('<div class="wpns-no-results">No categories found</div>').show();
+                    $resultsContainer.html('<div class="wpns-no-results">No categories found</div>').addClass('show');
                 }
             },
             error: function() {
-                $resultsContainer.html('<div class="wpns-error">Error searching categories</div>').show();
+                $resultsContainer.removeClass('loading');
+                $resultsContainer.html('<div class="wpns-error">Error searching categories</div>').addClass('show');
             }
         });
     }
@@ -340,16 +343,18 @@ window.WPNewsSource = window.WPNewsSource || {};
      */
     function searchTags(query, $resultsContainer) {
         $.ajax({
-            url: wpApiSettings.root + 'wp-news-source/v1/tags/search',
+            url: wpns_ajax.rest_url + 'wp-news-source/v1/tags/search',
             type: 'GET',
             data: {
                 search: query,
                 limit: 10
             },
             beforeSend: function(xhr) {
-                xhr.setRequestHeader('X-WP-Nonce', wpApiSettings.nonce);
+                xhr.setRequestHeader('X-WP-Nonce', wpns_ajax.rest_nonce);
+                $resultsContainer.addClass('loading');
             },
             success: function(response) {
+                $resultsContainer.removeClass('loading');
                 if (response.success && response.tags.length > 0) {
                     var html = '';
                     
@@ -362,19 +367,20 @@ window.WPNewsSource = window.WPNewsSource || {};
                     });
                     
                     if (html) {
-                        $resultsContainer.html(html).show();
+                        $resultsContainer.html(html).addClass('show');
                     } else {
-                        $resultsContainer.html('<div class="wpns-no-results">All matching tags already selected</div>').show();
+                        $resultsContainer.html('<div class="wpns-no-results">All matching tags already selected</div>').addClass('show');
                     }
                 } else {
                     var createOption = '<div class="wpns-tag-result wpns-create-tag" data-tag-name="' + query + '">' +
                                      '<strong>Create: "' + query + '"</strong>' +
                                      '</div>';
-                    $resultsContainer.html(createOption).show();
+                    $resultsContainer.html(createOption).addClass('show');
                 }
             },
             error: function() {
-                $resultsContainer.html('<div class="wpns-error">Error searching tags</div>').show();
+                $resultsContainer.removeClass('loading');
+                $resultsContainer.html('<div class="wpns-error">Error searching tags</div>').addClass('show');
             }
         });
     }
@@ -635,6 +641,45 @@ window.WPNewsSource = window.WPNewsSource || {};
         }, 2000);
     });
     
+    // Check for updates button
+    $('#wpns-check-updates-btn').on('click', function() {
+        var $btn = $(this);
+        var $status = $('#wpns-update-status');
+        var originalText = $btn.html();
+        
+        $btn.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> Checking...');
+        $status.empty();
+        
+        $.ajax({
+            url: wpns_ajax.ajax_url,
+            type: 'POST',
+            data: {
+                action: 'wpns_check_updates',
+                nonce: wpns_ajax.nonce
+            },
+            success: function(response) {
+                $btn.prop('disabled', false).html(originalText);
+                
+                if (response.success) {
+                    if (response.data.has_update) {
+                        $status.html('<div class="notice notice-warning inline"><p><strong>Update Available!</strong><br>' + 
+                                   'Current: ' + response.data.current_version + ' → New: ' + response.data.new_version + '<br>' +
+                                   '<a href="' + admin_url('plugins.php') + '" class="button button-primary">Go to Updates</a></p></div>');
+                    } else {
+                        $status.html('<div class="notice notice-success inline"><p><strong>✓ Up to date!</strong><br>' + 
+                                   response.data.message + '</p></div>');
+                    }
+                } else {
+                    $status.html('<div class="notice notice-error inline"><p><strong>Error:</strong> ' + response.data + '</p></div>');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).html(originalText);
+                $status.html('<div class="notice notice-error inline"><p><strong>Error:</strong> Could not check for updates.</p></div>');
+            }
+        });
+    });
+    
     // Enhanced form validation
     wpns.validateJSON = function(input) {
         const $input = $(input);
@@ -721,7 +766,7 @@ window.WPNewsSource = window.WPNewsSource || {};
     // Hide autocomplete results when clicking outside
     $(document).on('click', function(e) {
         if (!$(e.target).closest('.wpns-autocomplete-container').length) {
-            $('.wpns-autocomplete-results').hide();
+            $('.wpns-autocomplete-results').removeClass('show');
         }
     });
 

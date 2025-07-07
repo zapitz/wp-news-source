@@ -43,9 +43,10 @@ register_activation_hook(__FILE__, 'activate_wp_news_source');
 register_deactivation_hook(__FILE__, 'deactivate_wp_news_source');
 
 /**
- * Incluye la clase principal del plugin
+ * Incluye las clases principales del plugin
  */
 require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source.php';
+require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-updater.php';
 
 /**
  * Inicia la ejecución del plugin
