@@ -3,7 +3,7 @@
  * Plugin Name: WP News Source
  * Plugin URI: https://github.com/zapitz/wp-news-source
  * Description: Smart news source management with AI-powered detection for automated categorization and tagging. Perfect for n8n integration.
- * Version: 1.1.0
+ * Version: 1.2.0
  * Author: Ariel Urtaza
  * Author URI: https://urtaza.com
  * License: GPL-2.0+
@@ -18,7 +18,7 @@ if (!defined('WPINC')) {
 }
 
 // Define constantes del plugin
-define('WP_NEWS_SOURCE_VERSION', '1.1.0');
+define('WP_NEWS_SOURCE_VERSION', '1.2.0');
 define('WP_NEWS_SOURCE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WP_NEWS_SOURCE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WP_NEWS_SOURCE_PLUGIN_BASENAME', plugin_basename(__FILE__));
