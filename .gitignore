@@ -1,0 +1,38 @@
+# WordPress
+.DS_Store
+Thumbs.db
+
+# Development
+node_modules/
+*.log
+*.tmp
+*.temp
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Plugin specific
+/vendor/
+composer.lock
+
+# Testing
+phpunit.xml
+tests/_output/
+tests/_support/_generated
+
+# Deployment
+*.zip
+/dist/
+/build/
+
+# Personal/sensitive files
+wp-config-local.php
+local-config.php
+*.env

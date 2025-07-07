@@ -1,0 +1,275 @@
+# Spanish (Spain) translations for WP News Source
+# Copyright (C) 2024 WP News Source
+# This file is distributed under the same license as the WP News Source package.
+msgid ""
+msgstr ""
+"Project-Id-Version: WP News Source 1.1.0\n"
+"Report-Msgid-Bugs-To: https://github.com/zapitz/wp-news-source/issues\n"
+"POT-Creation-Date: 2024-07-07 12:00+0000\n"
+"PO-Revision-Date: 2024-07-07 12:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Spanish (Spain)\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Admin Menu
+msgid "News Sources"
+msgstr "Fuentes de Noticias"
+
+msgid "All Sources"
+msgstr "Todas las Fuentes"
+
+msgid "Add New"
+msgstr "Añadir Nueva"
+
+msgid "Statistics"
+msgstr "Estadísticas"
+
+msgid "Settings"
+msgstr "Configuración"
+
+# Add Source Form
+msgid "Add New Source"
+msgstr "Añadir Nueva Fuente"
+
+msgid "Source Name"
+msgstr "Nombre de la Fuente"
+
+msgid "Example: Government Agency, Red Cross, Company Name, etc."
+msgstr "Ejemplo: Agencia Gubernamental, Cruz Roja, Nombre de Empresa, etc."
+
+msgid "Slug"
+msgstr "Slug"
+
+msgid "Unique identifier. Will be generated automatically if left empty."
+msgstr "Identificador único. Se generará automáticamente si se deja vacío."
+
+msgid "Source Type"
+msgstr "Tipo de Fuente"
+
+msgid "General"
+msgstr "General"
+
+msgid "Government"
+msgstr "Gobierno"
+
+msgid "Company"
+msgstr "Empresa"
+
+msgid "NGO"
+msgstr "ONG"
+
+msgid "Description / Context"
+msgstr "Descripción / Contexto"
+
+msgid "Describe the context to detect this source. AI will use this information to improve detection."
+msgstr "Describe el contexto para detectar esta fuente. La IA usará esta información para mejorar la detección."
+
+msgid "Example: \"This source applies when the bulletin mentions: State Government, Governor, state works, state social programs, state government departments\""
+msgstr "Ejemplo: \"Esta fuente aplica cuando el boletín mencione: Gobierno del Estado, Gobernador, obras estatales, programas sociales estatales, secretarías del gobierno estatal\""
+
+msgid "Keywords"
+msgstr "Palabras Clave"
+
+msgid "Comma-separated list of keywords that help identify this source."
+msgstr "Lista de palabras clave separadas por comas que ayudan a identificar esta fuente."
+
+msgid "Example: governor, state government, department, official statement"
+msgstr "Ejemplo: gobernador, gobierno estatal, departamento, declaración oficial"
+
+msgid "Primary Category"
+msgstr "Categoría Principal"
+
+msgid "Start typing to search categories..."
+msgstr "Comienza a escribir para buscar categorías..."
+
+msgid "This category will be automatically assigned when this source is detected."
+msgstr "Esta categoría se asignará automáticamente cuando se detecte esta fuente."
+
+msgid "Associated Tags"
+msgstr "Etiquetas Asociadas"
+
+msgid "Start typing to search tags..."
+msgstr "Comienza a escribir para buscar etiquetas..."
+
+msgid "These tags will be automatically assigned. If they don't exist, they will be created."
+msgstr "Estas etiquetas se asignarán automáticamente. Si no existen, se crearán."
+
+msgid "Publishing Settings"
+msgstr "Configuración de Publicación"
+
+msgid "Auto-publish bulletins from this source"
+msgstr "Auto-publicar boletines de esta fuente"
+
+msgid "Requires review before publishing"
+msgstr "Requiere revisión antes de publicar"
+
+msgid "Webhook URL (Optional)"
+msgstr "URL de Webhook (Opcional)"
+
+msgid "URL for notifications when this source is detected. Useful for n8n integration."
+msgstr "URL para notificaciones cuando se detecte esta fuente. Útil para integración con n8n."
+
+msgid "Advanced Settings"
+msgstr "Configuración Avanzada"
+
+msgid "Show advanced options"
+msgstr "Mostrar opciones avanzadas"
+
+msgid "Generate specific API Key for this source"
+msgstr "Generar API Key específica para esta fuente"
+
+msgid "Detection Rules (JSON)"
+msgstr "Reglas de Detección (JSON)"
+
+msgid "Advanced rules in JSON format for custom detection."
+msgstr "Reglas avanzadas en formato JSON para detección personalizada."
+
+msgid "Save Source"
+msgstr "Guardar Fuente"
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+# Messages
+msgid "Source saved successfully"
+msgstr "Fuente guardada correctamente"
+
+msgid "Error saving source"
+msgstr "Error al guardar la fuente"
+
+msgid "Source deleted successfully"
+msgstr "Fuente eliminada correctamente"
+
+msgid "Error deleting source"
+msgstr "Error al eliminar la fuente"
+
+msgid "No sources found."
+msgstr "No se encontraron fuentes."
+
+msgid "Are you sure you want to delete this source?"
+msgstr "¿Estás seguro de que quieres eliminar esta fuente?"
+
+msgid "Invalid JSON format in detection rules"
+msgstr "Formato JSON inválido en las reglas de detección"
+
+msgid "Configuration exported successfully"
+msgstr "Configuración exportada correctamente"
+
+msgid "Configuration imported successfully"
+msgstr "Configuración importada correctamente"
+
+msgid "Invalid import data"
+msgstr "Datos de importación inválidos"
+
+# API Messages
+msgid "No source detected"
+msgstr "No se detectó ninguna fuente"
+
+msgid "Source detected successfully"
+msgstr "Fuente detectada correctamente"
+
+msgid "Invalid API key"
+msgstr "API key inválida"
+
+msgid "Access denied"
+msgstr "Acceso denegado"
+
+# Statistics
+msgid "Total Sources"
+msgstr "Total de Fuentes"
+
+msgid "Total Detections"
+msgstr "Total de Detecciones"
+
+msgid "Average Detections"
+msgstr "Promedio de Detecciones"
+
+msgid "Top Sources"
+msgstr "Principales Fuentes"
+
+msgid "Detection History"
+msgstr "Historial de Detecciones"
+
+msgid "Last Detected"
+msgstr "Última Detección"
+
+msgid "Confidence"
+msgstr "Confianza"
+
+msgid "Method"
+msgstr "Método"
+
+# Enhanced UI Strings
+msgid "Basic Information"
+msgstr "Información Básica"
+
+msgid "AI Detection Settings"
+msgstr "Configuración de Detección IA"
+
+msgid "Source Configuration"
+msgstr "Configuración de Fuente"
+
+msgid "Detection"
+msgstr "Detección"
+
+msgid "Publishing"
+msgstr "Publicación"
+
+msgid "Skip to main content"
+msgstr "Saltar al contenido principal"
+
+msgid "Use descriptive names for easy identification"
+msgstr "Usa nombres descriptivos para fácil identificación"
+
+msgid "Add relevant keywords for better AI detection"
+msgstr "Añade palabras clave relevantes para mejor detección IA"
+
+msgid "Test detection with sample content first"
+msgstr "Prueba la detección con contenido de muestra primero"
+
+msgid "Configure webhooks for automated workflows"
+msgstr "Configura webhooks para flujos de trabajo automatizados"
+
+msgid "API Integration"
+msgstr "Integración API"
+
+msgid "Once saved, this source will be available via:"
+msgstr "Una vez guardado, esta fuente estará disponible vía:"
+
+msgid "Click to copy endpoint URL"
+msgstr "Haz clic para copiar la URL del endpoint"
+
+msgid "Available rule types:"
+msgstr "Tipos de reglas disponibles:"
+
+msgid "Creates a unique API key that can be used for this source specifically."
+msgstr "Crea una API key única que puede usarse específicamente para esta fuente."
+
+msgid "Publishing behavior"
+msgstr "Comportamiento de publicación"
+
+msgid "Copied to clipboard!"
+msgstr "¡Copiado al portapapeles!"
+
+msgid "Failed to copy to clipboard"
+msgstr "Error al copiar al portapapeles"
+
+msgid "Please fill in all required fields"
+msgstr "Por favor completa todos los campos requeridos"
+
+msgid "Source saved successfully!"
+msgstr "¡Fuente guardada exitosamente!"
+
+msgid "Custom Detection Rules (JSON)"
+msgstr "Reglas de Detección Personalizadas (JSON)"
+
+# Permissions
+msgid "You do not have permission to access this page."
+msgstr "No tienes permisos para acceder a esta página."
+
+msgid "You do not have permission to perform this action."
+msgstr "No tienes permisos para realizar esta acción."
