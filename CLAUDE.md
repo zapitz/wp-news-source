@@ -2,9 +2,70 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Release Build Instructions
+
+When creating a release package, use the build script which creates a clean production build:
+
+```bash
+./build-release.sh
+```
+
+This will generate `wp-news-source.zip` (without version number in filename) containing only essential production files.
+
+## CRITICAL: LANGUAGE REQUIREMENTS
+
+**THIS PLUGIN MUST USE ENGLISH FOR ALL CODE, VARIABLES, AND INTERNAL STRUCTURES**
+
+- **PRIMARY LANGUAGE**: English is the ONLY language for code, variables, functions, classes, database fields, JSON structures, and ALL internal identifiers
+- **NO SPANISH IN CODE**: NEVER use Spanish for variable names, function names, JSON field names, or any code elements
+- **TRANSLATIONS**: Spanish translations are provided ONLY via .po/.mo language files
+- **JSON FIELD NAMES**: ALL JSON structures MUST use English field names (e.g., `source_type` NOT `tipo_fuente`, `identifiers` NOT `identificadores`)
+- **UI TEXT**: User-facing text uses WordPress translation functions `__()` and `_e()` with English as the base language
+
+## Important Release Guidelines
+
+### When Creating a New Release:
+
+1. **Provide ALL release information in English:**
+   - Release Title (e.g., "Critical Bug Fixes and UI Improvements")
+   - Version Tag (e.g., "v2.3.2")
+   - Full Description with bullet points of changes
+   - All documentation MUST be in English
+
+2. **Create production-ready ZIP file:**
+   - **FILE NAME**: ALWAYS use `wp-news-source.zip` (NO version number in filename)
+   - **CRITICAL**: Never include version numbers in the ZIP filename to prevent duplicate plugin installations
+   - **FOLDER INSIDE ZIP**: MUST ALWAYS be named `wp-news-source/` (NO version numbers)
+   - This ensures WordPress recognizes it as an update, not a new plugin
+   - WordPress updater requires consistent file and folder names
+
+3. **Exclude ALL development files:**
+   - No test files (test-*.php, test-*.sh, fix-*.php)
+   - No development configs (composer.json, webpack.config.js, phpunit.xml)
+   - No build tools (node_modules/, vendor/)
+   - No version control (.git/, .gitignore)
+   - No editor files (.DS_Store, *.bak, *~)
+   - No development documentation (RELEASE-*.md, BUGFIX-*.md, FIXES-*.md)
+   - No workflow JSONs (n8n-*.json, subflujo-*.json, flujo-*.json)
+   - No temporary folders (temp-*, tmp-*)
+   - Keep only: readme.txt and essential production files
+
+4. **ZIP Structure (ALWAYS use this exact structure):**
+   ```
+   wp-news-source.zip              <-- NO version in filename!
+   └── wp-news-source/             <-- NO version in folder name!
+       ├── admin/
+       ├── includes/
+       ├── languages/
+       ├── wp-news-source.php
+       └── readme.txt
+   ```
+   
+   **IMPORTANT**: Using version numbers in either the ZIP filename or the folder name will cause WordPress to install it as a NEW plugin instead of updating the existing one. This creates duplicate plugins and confuses users.
+
 ## Project Overview
 
-WP News Source is a WordPress plugin that manages news sources and press releases with AI-powered detection for automated categorization and tagging. The plugin is designed for n8n integration and helps media organizations automate content processing from multiple sources.
+WP News Source is a WordPress plugin that manages news sources and press releases for automated categorization and tagging. The plugin is designed for n8n integration and helps media organizations automate content processing from multiple sources.
 
 ## Architecture
 
@@ -13,16 +74,15 @@ The plugin follows WordPress plugin architecture with these key components:
 - **Main Plugin File**: `wp-news-source.php` - Entry point and activation hooks
 - **Core Classes**: Located in `/includes/`
   - `WP_News_Source` - Main plugin class that orchestrates all functionality
-  - `WP_News_Source_Loader` - Hook registration system (embedded in main class)
-  - `WP_News_Source_API` - REST API endpoints with AI detection and webhooks
+  - `WP_News_Source_Loader` - Hook registration system
+  - `WP_News_Source_API` - REST API endpoints with webhooks
   - `WP_News_Source_Activator` - Database setup and plugin activation
 - **Admin Interface**: `/admin/class-wp-news-source-admin.php` - WordPress admin panel with AJAX handlers
-- **Database Layer**: `/database/class-wp-news-source-db.php` - All database operations including AI detection
+- **Database Layer**: `/database/class-wp-news-source-db.php` - All database operations
 
 ## Key Features
 
-- **AI-Powered Detection**: Uses intelligent scoring system with name matching, keyword detection, and context analysis
-- **Detection Rules**: JSON-based custom detection rules (contains, regex, starts_with, word_count_min)
+- **Source Detection**: Simple name-based detection in content
 - **Webhook Support**: Real-time notifications when sources are detected
 - **Statistics & History**: Tracks detection performance and maintains history
 - **Import/Export**: JSON-based configuration sharing
@@ -33,8 +93,8 @@ The plugin follows WordPress plugin architecture with these key components:
 All endpoints are under `/wp-json/wp-news-source/v1/`:
 
 - `GET /sources` - List all sources
-- `GET /mapping` - Complete mapping for n8n (includes AI features flag)
-- `POST /detect` - AI-powered source detection (supports use_ai parameter)
+- `GET /mapping` - Complete mapping for n8n
+- `POST /detect` - Source detection by name
 - `POST /validate` - Validate content against source rules
 - `POST /webhook/{source_id}` - Webhook handler
 - `GET /history` - Detection history (with source_id filter)
@@ -48,7 +108,6 @@ All endpoints are under `/wp-json/wp-news-source/v1/`:
 
 **Main table**: `wp_news_sources`
 - Core fields: `id`, `name`, `slug`, `source_type`
-- AI fields: `description`, `keywords`, `detection_rules`
 - Mapping: `category_id`, `category_name`, `tag_ids`, `tag_names`
 - Automation: `auto_publish`, `requires_review`, `webhook_url`
 - Security: `api_key`
@@ -65,22 +124,14 @@ This is a standard WordPress plugin - no build process required.
 - Activate in WordPress Admin → Plugins
 - Access via WordPress Admin → News Sources menu
 - Four admin pages: All Sources, Add New, Statistics, Settings
+- Autocomplete functionality for categories and tags selection
 
 **Testing:**
 - Test in WordPress environment (DevKinsta, Local, etc.)
 - Use REST API tools to test endpoints
 - Check database changes in phpMyAdmin
-- Test AI detection with various content samples
+- Test detection with various content samples
 
-## AI Detection System
-
-The intelligent detection system uses a weighted scoring approach:
-1. **Exact name matching** (weight: 50)
-2. **Keyword matching** (weight: 20 per keyword)
-3. **Context analysis** from description (weight: 15 per phrase)
-4. **Custom JSON rules** (configurable weights)
-
-Minimum confidence threshold is 30 (configurable via `wpns_min_detection_confidence` filter).
 
 ## Professional UI System
 

@@ -1,0 +1,71 @@
+# Copyright (C) 2025 Ariel Urtaza
+# This file is distributed under the GPL-2.0+.
+msgid ""
+msgstr ""
+"Project-Id-Version: WP News Source 2.3.1\n"
+"Report-Msgid-Bugs-To: https://github.com/zapitz/wp-news-source/issues\n"
+"POT-Creation-Date: 2025-01-20T12:00:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#. Plugin Name of the plugin
+msgid "WP News Source"
+msgstr ""
+
+#. Plugin URI of the plugin
+msgid "https://github.com/zapitz/wp-news-source"
+msgstr ""
+
+#. Description of the plugin
+msgid "News source management for automated categorization and tagging. Perfect for n8n integration."
+msgstr ""
+
+#. Author of the plugin
+msgid "Ariel Urtaza"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://urtaza.com"
+msgstr ""
+
+#: admin/class-wp-news-source-admin.php:68
+msgid "News Sources"
+msgstr ""
+
+#: admin/class-wp-news-source-admin.php:79
+msgid "All Sources"
+msgstr ""
+
+#: admin/class-wp-news-source-admin.php:87
+msgid "Add New"
+msgstr ""
+
+#: admin/class-wp-news-source-admin.php:108
+msgid "Statistics"
+msgstr ""
+
+#: admin/class-wp-news-source-admin.php:117
+msgid "Settings"
+msgstr ""
+
+#: admin/partials/wp-news-source-add-source-simple.php:60
+msgid "Source Name"
+msgstr ""
+
+#: admin/partials/wp-news-source-add-source-simple.php:312
+msgid "Auto-publish"
+msgstr ""
+
+#: admin/partials/wp-news-source-add-source-simple.php:315
+msgid "If checked, posts will be published automatically. Otherwise, they will be saved as drafts."
+msgstr ""
+
+# Note: This is a template file. Actual translations should be generated using
+# WordPress i18n tools like wp i18n make-pot or similar tools that scan
+# the entire codebase for translatable strings.

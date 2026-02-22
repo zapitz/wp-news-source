@@ -21,12 +21,23 @@ class WP_News_Source_Updater {
         $this->github_repo = $github_repo;
         $this->github_api_url = "https://api.github.com/repos/{$github_username}/{$github_repo}";
         
+        // Check if update checks are disabled
+        if (get_option('wpns_disable_update_checks', false)) {
+            return; // Don't register any hooks if updates are disabled
+        }
+        
         add_filter('pre_set_site_transient_update_plugins', array($this, 'check_for_update'));
         add_filter('plugins_api', array($this, 'plugin_popup'), 10, 3);
         add_filter('upgrader_post_install', array($this, 'after_install'), 10, 3);
         
         // Add update check to admin
         add_action('admin_init', array($this, 'admin_init'));
+        
+        // Add AJAX handlers
+        add_action('wp_ajax_wpns_check_updates', array($this, 'manual_update_check'));
+        add_action('wp_ajax_wpns_get_versions', array($this, 'get_available_versions'));
+        add_action('wp_ajax_wpns_get_changelog', array($this, 'get_changelog'));
+        add_action('wp_ajax_wpns_rollback_version', array($this, 'rollback_version'));
     }
     
     /**
@@ -65,14 +76,48 @@ class WP_News_Source_Updater {
      * Get remote version from GitHub
      */
     private function get_remote_version() {
-        $request = wp_remote_get($this->github_api_url . '/releases/latest');
+        // Check if we should skip update checks
+        if (get_option('wpns_disable_update_checks', false)) {
+            return false;
+        }
         
-        if (!is_wp_error($request) && wp_remote_retrieve_response_code($request) === 200) {
-            $body = wp_remote_retrieve_body($request);
-            $data = json_decode($body, true);
+        $include_prereleases = get_option('wpns_enable_prereleases', false);
+        
+        // Set shorter timeout for GitHub API requests to avoid slowdowns
+        $args = array(
+            'timeout' => 3, // Reduced from 10 to 3 seconds
+            'headers' => array(
+                'Accept' => 'application/vnd.github.v3+json',
+                'User-Agent' => 'WP-News-Source-Plugin/' . $this->version
+            )
+        );
+        
+        // If prereleases are enabled, get all releases
+        if ($include_prereleases) {
+            $request = wp_remote_get($this->github_api_url . '/releases', $args);
             
-            if (isset($data['tag_name'])) {
-                return ltrim($data['tag_name'], 'v'); // Remove 'v' prefix
+            if (!is_wp_error($request) && wp_remote_retrieve_response_code($request) === 200) {
+                $body = wp_remote_retrieve_body($request);
+                $releases = json_decode($body, true);
+                
+                if (is_array($releases) && !empty($releases)) {
+                    // Get the first release (latest, including prereleases)
+                    if (isset($releases[0]['tag_name'])) {
+                        return ltrim($releases[0]['tag_name'], 'v');
+                    }
+                }
+            }
+        } else {
+            // Only get stable releases
+            $request = wp_remote_get($this->github_api_url . '/releases/latest', $args);
+            
+            if (!is_wp_error($request) && wp_remote_retrieve_response_code($request) === 200) {
+                $body = wp_remote_retrieve_body($request);
+                $data = json_decode($body, true);
+                
+                if (isset($data['tag_name'])) {
+                    return ltrim($data['tag_name'], 'v'); // Remove 'v' prefix
+                }
             }
         }
         
@@ -83,7 +128,25 @@ class WP_News_Source_Updater {
      * Get download URL for specific version
      */
     private function get_download_url($version) {
-        return $this->github_api_url . "/releases/download/v{$version}/wp-news-source-{$version}.zip";
+        // Get release info to find the download URL
+        $request = wp_remote_get($this->github_api_url . '/releases/tags/v' . $version);
+        
+        if (!is_wp_error($request) && wp_remote_retrieve_response_code($request) === 200) {
+            $body = wp_remote_retrieve_body($request);
+            $release = json_decode($body, true);
+            
+            // Look for the zip asset
+            if (isset($release['assets']) && is_array($release['assets'])) {
+                foreach ($release['assets'] as $asset) {
+                    if (strpos($asset['name'], '.zip') !== false) {
+                        return $asset['browser_download_url'];
+                    }
+                }
+            }
+        }
+        
+        // Fallback to direct download URL
+        return "https://github.com/{$this->github_username}/{$this->github_repo}/releases/download/v{$version}/wp-news-source.zip";
     }
     
     /**
@@ -122,7 +185,7 @@ class WP_News_Source_Updater {
             'download_link' => $this->get_download_url($remote_version),
             'sections' => array(
                 'description' => $plugin_data['Description'],
-                'changelog' => $this->get_changelog(),
+                'changelog' => $this->get_changelog_list(),
             ),
             'banners' => array(),
             'icons' => array(),
@@ -132,7 +195,7 @@ class WP_News_Source_Updater {
     /**
      * Get changelog from GitHub releases
      */
-    private function get_changelog() {
+    private function get_changelog_list() {
         $request = wp_remote_get($this->github_api_url . '/releases');
         
         if (!is_wp_error($request) && wp_remote_retrieve_response_code($request) === 200) {
@@ -226,7 +289,7 @@ class WP_News_Source_Updater {
      * Manual update check via AJAX
      */
     public function manual_update_check() {
-        check_ajax_referer('wpns_nonce', 'nonce');
+        check_ajax_referer('wpns_check_updates', 'nonce');
         
         if (!current_user_can('update_plugins')) {
             wp_die(__('You do not have permission to update plugins.', 'wp-news-source'));
@@ -235,13 +298,24 @@ class WP_News_Source_Updater {
         $remote_version = $this->get_remote_version();
         $current_version = $this->version;
         
+        // Handle case where GitHub API is unreachable
+        if ($remote_version === false) {
+            wp_send_json_success(array(
+                'has_update' => false,
+                'current_version' => $current_version,
+                'message' => __('Unable to check for updates. GitHub API may be temporarily unavailable.', 'wp-news-source'),
+                'api_error' => true
+            ));
+            return;
+        }
+        
         if ($remote_version && version_compare($current_version, $remote_version, '<')) {
             wp_send_json_success(array(
                 'has_update' => true,
                 'current_version' => $current_version,
                 'new_version' => $remote_version,
                 'message' => sprintf(
-                    __('Update available! Current: %s, New: %s', 'wp-news-source'),
+                    __('Update available! Current: v%s, New: v%s', 'wp-news-source'),
                     $current_version,
                     $remote_version
                 )
@@ -253,5 +327,184 @@ class WP_News_Source_Updater {
                 'message' => __('You have the latest version.', 'wp-news-source')
             ));
         }
+    }
+    
+    /**
+     * Get available versions for rollback
+     */
+    public function get_available_versions() {
+        check_ajax_referer('wpns_get_versions', 'nonce');
+        
+        if (!current_user_can('update_plugins')) {
+            wp_die(__('You do not have permission to manage plugin versions.', 'wp-news-source'));
+        }
+        
+        $include_prereleases = !empty($_POST['include_prereleases']);
+        $request = wp_remote_get($this->github_api_url . '/releases?per_page=10');
+        
+        if (is_wp_error($request) || wp_remote_retrieve_response_code($request) !== 200) {
+            wp_send_json_error(array('message' => __('Failed to fetch versions', 'wp-news-source')));
+        }
+        
+        $body = wp_remote_retrieve_body($request);
+        $releases = json_decode($body, true);
+        
+        if (!is_array($releases)) {
+            wp_send_json_error(array('message' => __('Invalid response from GitHub', 'wp-news-source')));
+        }
+        
+        $versions = array();
+        $count = 0;
+        
+        foreach ($releases as $release) {
+            // Skip draft releases
+            if ($release['draft']) {
+                continue;
+            }
+            
+            // Skip prereleases if not included
+            if ($release['prerelease'] && !$include_prereleases) {
+                continue;
+            }
+            
+            $version = ltrim($release['tag_name'], 'v');
+            
+            // Find the zip asset
+            $download_url = null;
+            if (isset($release['assets']) && is_array($release['assets'])) {
+                foreach ($release['assets'] as $asset) {
+                    if (strpos($asset['name'], '.zip') !== false) {
+                        $download_url = $asset['browser_download_url'];
+                        break;
+                    }
+                }
+            }
+            
+            // Fallback download URL
+            if (!$download_url) {
+                $download_url = "https://github.com/{$this->github_username}/{$this->github_repo}/releases/download/{$release['tag_name']}/wp-news-source.zip";
+            }
+            
+            $versions[] = array(
+                'version' => $version,
+                'name' => $release['name'] ?: $release['tag_name'],
+                'date' => date('Y-m-d', strtotime($release['published_at'])),
+                'prerelease' => $release['prerelease'],
+                'download_url' => $download_url,
+                'body' => $release['body']
+            );
+            
+            $count++;
+            if ($count >= 4) { // Maximum 4 versions (current + 3 previous)
+                break;
+            }
+        }
+        
+        wp_send_json_success(array('versions' => $versions));
+    }
+    
+    /**
+     * Get changelog for a specific version
+     */
+    public function get_changelog() {
+        check_ajax_referer('wpns_get_changelog', 'nonce');
+        
+        $version = sanitize_text_field($_POST['version']);
+        if (!$version) {
+            wp_send_json_error(array('message' => __('Version not specified', 'wp-news-source')));
+        }
+        
+        $request = wp_remote_get($this->github_api_url . '/releases/tags/v' . $version);
+        
+        if (is_wp_error($request) || wp_remote_retrieve_response_code($request) !== 200) {
+            wp_send_json_error(array('message' => __('Failed to fetch changelog', 'wp-news-source')));
+        }
+        
+        $body = wp_remote_retrieve_body($request);
+        $release = json_decode($body, true);
+        
+        if (!$release || !isset($release['body'])) {
+            wp_send_json_error(array('message' => __('Changelog not found', 'wp-news-source')));
+        }
+        
+        // Convert markdown to HTML (basic conversion)
+        $changelog = $release['body'];
+        $changelog = str_replace('\r\n', "\n", $changelog);
+        $changelog = wpautop($changelog);
+        
+        // Convert markdown headers
+        $changelog = preg_replace('/^### (.+)$/m', '<h4>$1</h4>', $changelog);
+        $changelog = preg_replace('/^## (.+)$/m', '<h3>$1</h3>', $changelog);
+        $changelog = preg_replace('/^# (.+)$/m', '<h2>$1</h2>', $changelog);
+        
+        // Convert markdown lists
+        $changelog = preg_replace('/^- (.+)$/m', '<li>$1</li>', $changelog);
+        $changelog = preg_replace('/(<li>.*<\/li>)/s', '<ul>$1</ul>', $changelog);
+        
+        // Convert markdown bold and code
+        $changelog = preg_replace('/\*\*(.+?)\*\*/', '<strong>$1</strong>', $changelog);
+        $changelog = preg_replace('/`(.+?)`/', '<code>$1</code>', $changelog);
+        
+        wp_send_json_success(array('changelog' => $changelog));
+    }
+    
+    /**
+     * Rollback to a specific version
+     */
+    public function rollback_version() {
+        check_ajax_referer('wpns_rollback_version', 'nonce');
+        
+        if (!current_user_can('update_plugins')) {
+            wp_die(__('You do not have permission to manage plugin versions.', 'wp-news-source'));
+        }
+        
+        $version = sanitize_text_field($_POST['version']);
+        if (!$version) {
+            wp_send_json_error(array('message' => __('Version not specified', 'wp-news-source')));
+        }
+        
+        // Get download URL for the version
+        $download_url = $this->get_download_url($version);
+        if (!$download_url) {
+            wp_send_json_error(array('message' => __('Failed to get download URL', 'wp-news-source')));
+        }
+        
+        // Use WordPress upgrader to install the specific version
+        require_once ABSPATH . 'wp-admin/includes/class-wp-upgrader.php';
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+        require_once ABSPATH . 'wp-admin/includes/misc.php';
+        
+        $upgrader = new Plugin_Upgrader(new Automatic_Upgrader_Skin());
+        $result = $upgrader->install($download_url, array(
+            'overwrite_package' => true,
+            'destination' => WP_PLUGIN_DIR,
+            'clear_destination' => true,
+            'clear_working' => true,
+            'hook_extra' => array(
+                'plugin' => $this->plugin_slug,
+                'type' => 'plugin',
+                'action' => 'update'
+            )
+        ));
+        
+        if (is_wp_error($result)) {
+            wp_send_json_error(array(
+                'message' => sprintf(
+                    __('Failed to switch to version %s: %s', 'wp-news-source'),
+                    $version,
+                    $result->get_error_message()
+                )
+            ));
+        }
+        
+        // Reactivate plugin
+        activate_plugin($this->plugin_slug);
+        
+        wp_send_json_success(array(
+            'message' => sprintf(
+                __('Successfully switched to version %s', 'wp-news-source'),
+                $version
+            )
+        ));
     }
 }

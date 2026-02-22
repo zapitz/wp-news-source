@@ -1,21 +1,21 @@
 <?php
 /**
- * La clase principal del plugin
+ * The main plugin class
  */
 class WP_News_Source {
     
     /**
-     * El loader que registra todos los hooks del plugin
+     * The loader that registers all plugin hooks
      */
     protected $loader;
     
     /**
-     * El identificador único del plugin
+     * The unique plugin identifier
      */
     protected $plugin_name;
     
     /**
-     * La versión actual del plugin
+     * The current plugin version
      */
     protected $version;
     
@@ -33,33 +33,42 @@ class WP_News_Source {
     }
     
     /**
-     * Carga las dependencias requeridas
+     * Load required dependencies
      */
     private function load_dependencies() {
-        // Loader para registrar hooks
+        // Loader for registering hooks
         require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-loader.php';
         
-        // Funcionalidad del área de administración
+        // Admin area functionality
         require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'admin/class-wp-news-source-admin.php';
         
-        // API REST
+        // REST API
         require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-api.php';
         
-        // Base de datos
+        // Database
         require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'database/class-wp-news-source-db.php';
+        
+        // Configuration
+        require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-config.php';
+        
+        // Performance optimizations
+        require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-performance.php';
+        
+        // Update page fix
+        require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-update-page-fix.php';
         
         $this->loader = new WP_News_Source_Loader();
     }
     
     /**
-     * Define la localización del plugin
+     * Define plugin localization
      */
     private function set_locale() {
         $this->loader->add_action('plugins_loaded', $this, 'load_plugin_textdomain');
     }
     
     /**
-     * Registra todos los hooks del área de administración
+     * Register all admin area hooks
      */
     private function define_admin_hooks() {
         $plugin_admin = new WP_News_Source_Admin($this->get_plugin_name(), $this->get_version());
@@ -67,6 +76,7 @@ class WP_News_Source {
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_styles');
         $this->loader->add_action('admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts');
         $this->loader->add_action('admin_menu', $plugin_admin, 'add_plugin_admin_menu');
+        $this->loader->add_action('in_admin_header', $plugin_admin, 'admin_header');
         
         // AJAX handlers
         $this->loader->add_action('wp_ajax_wpns_save_source', $plugin_admin, 'ajax_save_source');
@@ -74,10 +84,21 @@ class WP_News_Source {
         $this->loader->add_action('wp_ajax_wpns_get_source', $plugin_admin, 'ajax_get_source');
         $this->loader->add_action('wp_ajax_wpns_export_sources', $plugin_admin, 'ajax_export_sources');
         $this->loader->add_action('wp_ajax_wpns_import_sources', $plugin_admin, 'ajax_import_sources');
+        
+        // Prompts AJAX handlers
+        $this->loader->add_action('wp_ajax_wpns_save_prompt', $plugin_admin, 'ajax_save_prompt');
+        $this->loader->add_action('wp_ajax_wpns_delete_prompt', $plugin_admin, 'ajax_delete_prompt');
+        $this->loader->add_action('wp_ajax_wpns_get_prompt', $plugin_admin, 'ajax_get_prompt');
+        
+        // Statistics AJAX handlers
+        $this->loader->add_action('wp_ajax_wpns_export_history', $plugin_admin, 'ajax_export_history');
+        
+        // Check for version updates
+        $this->loader->add_action('admin_init', $this, 'check_version');
     }
     
     /**
-     * Registra los endpoints de la API REST
+     * Register REST API endpoints
      */
     private function define_api_hooks() {
         $plugin_api = new WP_News_Source_API($this->get_plugin_name(), $this->get_version());
@@ -99,19 +120,28 @@ class WP_News_Source {
             $this->get_version()
         );
         
-        // Add AJAX handler for manual update check
+        // Add AJAX handlers for version management
         $this->loader->add_action('wp_ajax_wpns_check_updates', $plugin_updater, 'manual_update_check');
+        $this->loader->add_action('wp_ajax_wpns_get_versions', $plugin_updater, 'get_available_versions');
+        $this->loader->add_action('wp_ajax_wpns_get_changelog', $plugin_updater, 'get_changelog');
+        $this->loader->add_action('wp_ajax_wpns_rollback_version', $plugin_updater, 'rollback_version');
     }
     
     /**
-     * Ejecuta el loader para ejecutar todos los hooks
+     * Execute the loader to run all hooks
      */
     public function run() {
+        // Initialize performance optimizations early
+        WP_News_Source_Performance::init();
+        
+        // Initialize update page fix
+        WP_News_Source_Update_Page_Fix::init();
+        
         $this->loader->run();
     }
     
     /**
-     * Carga los archivos de traducción
+     * Load translation files
      */
     public function load_plugin_textdomain() {
         load_plugin_textdomain(
@@ -122,60 +152,32 @@ class WP_News_Source {
     }
     
     /**
-     * Obtiene el nombre del plugin
+     * Get the plugin name
      */
     public function get_plugin_name() {
         return $this->plugin_name;
     }
     
     /**
-     * Obtiene la versión del plugin
+     * Get the plugin version
      */
     public function get_version() {
         return $this->version;
     }
-}
+    
+    /**
+     * Check plugin version and run updates if needed
+     */
+    public function check_version() {
+        $current_version = get_option('wp_news_source_version', '1.0.0');
+        
+        // If version has changed, ensure capabilities are added
+        if (version_compare($current_version, WP_NEWS_SOURCE_VERSION, '<')) {
+            require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-activator.php';
+            WP_News_Source_Activator::activate();
 
-/**
- * Clase Loader para registrar hooks
- */
-class WP_News_Source_Loader {
-    
-    protected $actions;
-    protected $filters;
-    
-    public function __construct() {
-        $this->actions = array();
-        $this->filters = array();
-    }
-    
-    public function add_action($hook, $component, $callback, $priority = 10, $accepted_args = 1) {
-        $this->actions = $this->add($this->actions, $hook, $component, $callback, $priority, $accepted_args);
-    }
-    
-    public function add_filter($hook, $component, $callback, $priority = 10, $accepted_args = 1) {
-        $this->filters = $this->add($this->filters, $hook, $component, $callback, $priority, $accepted_args);
-    }
-    
-    private function add($hooks, $hook, $component, $callback, $priority, $accepted_args) {
-        $hooks[] = array(
-            'hook' => $hook,
-            'component' => $component,
-            'callback' => $callback,
-            'priority' => $priority,
-            'accepted_args' => $accepted_args
-        );
-        
-        return $hooks;
-    }
-    
-    public function run() {
-        foreach ($this->filters as $hook) {
-            add_filter($hook['hook'], array($hook['component'], $hook['callback']), $hook['priority'], $hook['accepted_args']);
-        }
-        
-        foreach ($this->actions as $hook) {
-            add_action($hook['hook'], array($hook['component'], $hook['callback']), $hook['priority'], $hook['accepted_args']);
+            // Update stored version
+            update_option('wp_news_source_version', WP_NEWS_SOURCE_VERSION);
         }
     }
 }

@@ -198,6 +198,21 @@ window.WPNewsSource = window.WPNewsSource || {};
     initializeCategoryAutocomplete();
     initializeTagsAutocomplete();
     
+    // Initialize tags counter on page load
+    if ($('#source-tags-search').length > 0) {
+        // If in editing mode, collect existing tags
+        if ($('.wpns-tag-item').length > 0) {
+            $('.wpns-tag-item').each(function() {
+                var tagName = $(this).data('tag-name');
+                if (tagName && selectedTags.indexOf(tagName) === -1) {
+                    selectedTags.push(tagName);
+                }
+            });
+        }
+        updateTagsCounter();
+        updateTagsDisplay();
+    }
+    
     /**
      * Category Autocomplete
      */
@@ -270,11 +285,27 @@ window.WPNewsSource = window.WPNewsSource || {};
         // Handle tag selection
         $(document).on('click', '.wpns-tag-result', function() {
             var tagName = $(this).data('tag-name');
+            var maxTags = parseInt(wpns_ajax.max_tags) || 3; // Default to 3 if not set
             
             if (selectedTags.indexOf(tagName) === -1) {
+                // Check tag limit
+                if (selectedTags.length >= maxTags) {
+                    if (typeof WPNSNotices !== 'undefined') {
+                        WPNSNotices.error('Maximum number of tags (' + maxTags + ') reached');
+                    } else {
+                        alert('Maximum number of tags (' + maxTags + ') reached');
+                    }
+                    return;
+                }
+                
                 addTag(tagName, $selectedContainer);
-                $('#source-tags-search').val('').focus();
-                $resultsContainer.hide().empty();
+                // Clear input and results
+                $searchInput.val('');
+                $resultsContainer.removeClass('show').empty();
+                // Refocus on input for continuous adding
+                setTimeout(function() {
+                    $searchInput.focus();
+                }, 100);
             }
         });
         
@@ -289,11 +320,22 @@ window.WPNewsSource = window.WPNewsSource || {};
             if (e.which === 13) { // Enter
                 e.preventDefault();
                 var tagName = $(this).val().trim();
+                var maxTags = parseInt(wpns_ajax.max_tags) || 3; // Default to 3 if not set
                 
                 if (tagName && selectedTags.indexOf(tagName) === -1) {
+                    // Check tag limit
+                    if (selectedTags.length >= maxTags) {
+                        if (typeof WPNSNotices !== 'undefined') {
+                            WPNSNotices.error('Maximum number of tags (' + maxTags + ') reached');
+                        } else {
+                            alert('Maximum number of tags (' + maxTags + ') reached');
+                        }
+                        return;
+                    }
+                    
                     addTag(tagName, $selectedContainer);
                     $(this).val('');
-                    $resultsContainer.hide().empty();
+                    $resultsContainer.removeClass('show').empty();
                 }
             }
         });
@@ -303,8 +345,17 @@ window.WPNewsSource = window.WPNewsSource || {};
      * Search categories via AJAX
      */
     function searchCategories(query, $resultsContainer) {
+        // Check if wpns_ajax is defined
+        if (typeof wpns_ajax === 'undefined') {
+            // Error: wpns_ajax is undefined
+            $resultsContainer.html('<div class="wpns-error">Configuration error: wpns_ajax not loaded</div>').addClass('show');
+            return;
+        }
+        
+        var ajaxUrl = wpns_ajax.rest_url + 'wp-news-source/v1/categories/search';
+        
         $.ajax({
-            url: wpns_ajax.rest_url + 'wp-news-source/v1/categories/search',
+            url: ajaxUrl,
             type: 'GET',
             data: {
                 search: query,
@@ -316,7 +367,8 @@ window.WPNewsSource = window.WPNewsSource || {};
             },
             success: function(response) {
                 $resultsContainer.removeClass('loading');
-                if (response.success && response.categories.length > 0) {
+                
+                if (response.success && response.categories && response.categories.length > 0) {
                     var html = '';
                     
                     response.categories.forEach(function(category) {
@@ -331,9 +383,10 @@ window.WPNewsSource = window.WPNewsSource || {};
                     $resultsContainer.html('<div class="wpns-no-results">No categories found</div>').addClass('show');
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                // Error: Category search failed
                 $resultsContainer.removeClass('loading');
-                $resultsContainer.html('<div class="wpns-error">Error searching categories</div>').addClass('show');
+                $resultsContainer.html('<div class="wpns-error">Error searching categories: ' + error + '</div>').addClass('show');
             }
         });
     }
@@ -342,8 +395,17 @@ window.WPNewsSource = window.WPNewsSource || {};
      * Search tags via AJAX
      */
     function searchTags(query, $resultsContainer) {
+        // Check if wpns_ajax is defined
+        if (typeof wpns_ajax === 'undefined') {
+            // Error: wpns_ajax is undefined
+            $resultsContainer.html('<div class="wpns-error">Configuration error: wpns_ajax not loaded</div>').addClass('show');
+            return;
+        }
+        
+        var ajaxUrl = wpns_ajax.rest_url + 'wp-news-source/v1/tags/search';
+        
         $.ajax({
-            url: wpns_ajax.rest_url + 'wp-news-source/v1/tags/search',
+            url: ajaxUrl,
             type: 'GET',
             data: {
                 search: query,
@@ -355,7 +417,8 @@ window.WPNewsSource = window.WPNewsSource || {};
             },
             success: function(response) {
                 $resultsContainer.removeClass('loading');
-                if (response.success && response.tags.length > 0) {
+                
+                if (response.success && response.tags && response.tags.length > 0) {
                     var html = '';
                     
                     response.tags.forEach(function(tag) {
@@ -378,9 +441,10 @@ window.WPNewsSource = window.WPNewsSource || {};
                     $resultsContainer.html(createOption).addClass('show');
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                // Error: Tags search failed
                 $resultsContainer.removeClass('loading');
-                $resultsContainer.html('<div class="wpns-error">Error searching tags</div>').addClass('show');
+                $resultsContainer.html('<div class="wpns-error">Error searching tags: ' + error + '</div>').addClass('show');
             }
         });
     }
@@ -396,8 +460,8 @@ window.WPNewsSource = window.WPNewsSource || {};
         $hiddenInput.val(categoryId);
         
         var selectedHtml = '<div class="wpns-selected-category">' +
-                          '<strong>' + categoryName + '</strong> (ID: ' + categoryId + ')' +
-                          '<span class="wpns-remove-category">×</span>' +
+                          '<span><strong>' + categoryName + '</strong> (ID: ' + categoryId + ')</span>' +
+                          '<span class="wpns-remove-category" title="Remove category">×</span>' +
                           '</div>';
         
         $selectedContainer.html(selectedHtml).show();
@@ -425,6 +489,8 @@ window.WPNewsSource = window.WPNewsSource || {};
                       '</span>';
         
         $selectedContainer.append(tagHtml);
+        updateTagsCounter();
+        updateTagsDisplay();
     }
     
     /**
@@ -435,6 +501,48 @@ window.WPNewsSource = window.WPNewsSource || {};
         if (index > -1) {
             selectedTags.splice(index, 1);
             $('.wpns-tag-item[data-tag-name="' + tagName + '"]').remove();
+            updateTagsCounter();
+            updateTagsDisplay();
+        }
+    }
+    
+    /**
+     * Update tags counter display
+     */
+    function updateTagsCounter() {
+        var $counter = $('#wpns-tags-counter');
+        var $count = $('#wpns-tags-count');
+        var tagCount = selectedTags.length;
+        
+        $count.text(tagCount);
+        
+        if (tagCount > 0) {
+            $counter.show().addClass('has-tags');
+        } else {
+            $counter.hide().removeClass('has-tags');
+        }
+    }
+    
+    /**
+     * Update tags display with limit info
+     */
+    function updateTagsDisplay() {
+        var maxTags = parseInt(wpns_ajax.max_tags) || 3;
+        var $tagsLabel = $('.wpns-form-group label[for="source-tags"]');
+        var $tagsInfo = $('#wpns-tags-limit-info');
+        
+        if ($tagsInfo.length === 0) {
+            $tagsInfo = $('<span id="wpns-tags-limit-info" style="margin-left: 10px; color: #666; font-weight: normal;"></span>');
+            $tagsLabel.append($tagsInfo);
+        }
+        
+        $tagsInfo.text('(' + selectedTags.length + '/' + maxTags + ')');
+        
+        // Disable input if limit reached
+        if (selectedTags.length >= maxTags) {
+            $('#source-tags-search').prop('disabled', true).attr('placeholder', 'Maximum tags reached');
+        } else {
+            $('#source-tags-search').prop('disabled', false).attr('placeholder', 'Search or create tags...');
         }
     }
     
@@ -466,43 +574,105 @@ window.WPNewsSource = window.WPNewsSource || {};
             return;
         }
         
+        // Validate AI config JSON if provided
+        const aiConfig = $('#source-ai-config').val().trim();
+        if (aiConfig) {
+            try {
+                JSON.parse(aiConfig);
+            } catch (e) {
+                WPNSNotices.error('Invalid JSON in AI Detection Rules: ' + e.message);
+                $('#source-ai-config').focus();
+                return;
+            }
+        }
+        
         const formData = {
             name: $('#source-name').val(),
-            slug: $('#source-slug').val(),
-            source_type: $('#source-type').val(),
-            description: $('#source-description').val(),
-            keywords: $('#source-keywords').val(),
-            detection_rules: $('#source-detection-rules').val(),
+            slug: '', // Auto-generated
+            source_type: $('#source-type-select').val() || 'general',
+            description: $('#source-description').val() || '',
+            keywords: $('#source-keywords').val() || '',
+            detection_rules: $('#source-ai-config').val() || '', // AI detection configuration
             category_id: $('#source-category').val(),
             tags: selectedTags,
             auto_publish: $('#source-auto-publish').is(':checked') ? 1 : 0,
-            requires_review: $('#source-requires-review').is(':checked') ? 1 : 0,
-            webhook_url: $('#source-webhook').val(),
-            generate_api_key: $('input[name="generate_api_key"]').is(':checked') ? 1 : 0
+            requires_review: 1, // Default to requires review for safety
+            webhook_url: '', // Moved to settings
+            generate_api_key: 0 // Moved to settings
         };
+        
+        // Add source_id if editing
+        const sourceId = $('input[name="source_id"]').val();
+        if (sourceId) {
+            formData.source_id = sourceId;
+        }
         
         // Add loading state to button
         $submitBtn.addClass('loading').prop('disabled', true);
         
         wpnsAjaxCall('save_source', formData, 
             function(response) {
-                WPNSNotices.success('Source saved successfully!');
+                if (typeof WPNSNotices !== 'undefined') {
+                    WPNSNotices.success('Source saved successfully!');
+                }
+                
+                // Redirect back to All Sources
                 setTimeout(() => {
-                    window.location.href = 'admin.php?page=wp-news-source&message=saved';
-                }, 1500);
+                    if (typeof wpns_ajax !== 'undefined' && wpns_ajax.admin_url) {
+                        window.location.href = wpns_ajax.admin_url + 'admin.php?page=wp-news-source&message=saved';
+                    } else {
+                        window.location.href = 'admin.php?page=wp-news-source&message=saved';
+                    }
+                }, 1000);
             },
             function(error) {
-                $submitBtn.removeClass('loading').prop('disabled', false);
+                $submitBtn.removeClass('loading').prop('disabled', false).text(originalText);
             }
         );
     });
     
-    // Delete source
-    $(document).on('click', '.wpns-delete-source', function() {
+    // Edit source
+    $(document).on('click', '.wpns-edit-source', function() {
         var sourceId = $(this).data('source-id');
-        var sourceName = $(this).data('source-name');
+        
+        // Redirect to edit page (or load edit modal - for now redirect)
+        window.location.href = 'admin.php?page=wp-news-source-add&edit=' + sourceId;
+    });
+    
+    // Delete source - Enhanced version with immediate feedback
+    $(document).on('click', '.wpns-delete-source', function(e) {
+        e.preventDefault();
+        
+        var $button = $(this);
+        var sourceId = $button.data('source-id');
+        var sourceName = $button.data('source-name');
+        var $row = $('tr[data-source-id="' + sourceId + '"]');
+        
+        if (!$row.length) {
+            // Error: Row not found for source ID
+            alert('Error: Could not find source row');
+            return;
+        }
         
         if (confirm('Are you sure you want to delete the source "' + sourceName + '"?')) {
+            // IMMEDIATE visual feedback - this should work instantly
+            $row.css({
+                'background-color': '#ffebee',
+                'opacity': '0.5',
+                'transition': 'all 0.3s ease'
+            });
+            
+            $button.prop('disabled', true).text('Deleting...');
+            
+            // Check if wpns_ajax is available
+            if (typeof wpns_ajax === 'undefined') {
+                // Error: wpns_ajax not available
+                alert('Configuration error - please refresh the page');
+                $row.css({'background-color': '', 'opacity': '1'});
+                $button.prop('disabled', false).text('Delete');
+                return;
+            }
+            
             $.ajax({
                 url: wpns_ajax.ajax_url,
                 type: 'POST',
@@ -511,20 +681,89 @@ window.WPNewsSource = window.WPNewsSource || {};
                     nonce: wpns_ajax.nonce,
                     source_id: sourceId
                 },
+                timeout: 10000, // 10 second timeout
                 success: function(response) {
-                    if (response.success) {
-                        $('tr[data-source-id="' + sourceId + '"]').fadeOut(300, function() {
+                    if (response && response.success) {
+                        // Smoothly remove the row
+                        $row.fadeOut(400, function() {
                             $(this).remove();
-                            if ($('#the-list tr').length === 0) {
-                                $('#the-list').html('<tr><td colspan="6" class="no-items">No sources found.</td></tr>');
+                            
+                            // Check if no rows left
+                            var $remainingRows = $('#the-list tr').not('.no-items');
+                            
+                            if ($remainingRows.length === 0) {
+                                $('#the-list').html('<tr class="no-items"><td colspan="6" style="text-align:center;padding:20px;color:#666;font-style:italic;">No sources found.</td></tr>');
                             }
                         });
+                        
+                        // Success notification
+                        if (typeof WPNSNotices !== 'undefined') {
+                            WPNSNotices.success('Source deleted successfully');
+                        }
+                        
                     } else {
-                        alert('Error: ' + response.data);
+                        // Error: Delete failed
+                        // Restore row appearance
+                        $row.css({'background-color': '', 'opacity': '1'});
+                        $button.prop('disabled', false).text('Delete');
+                        
+                        var errorMsg = 'Failed to delete source';
+                        if (response && response.data) {
+                            errorMsg += ': ' + response.data;
+                        }
+                        
+                        if (typeof WPNSNotices !== 'undefined') {
+                            WPNSNotices.error(errorMsg);
+                        } else {
+                            alert(errorMsg);
+                        }
                     }
                 },
-                error: function() {
-                    alert('Error deleting source');
+                error: function(xhr, status, error) {
+                    // Try to extract JSON from mixed HTML/JSON response
+                    var actualResponse = null;
+                    if (xhr.responseText && typeof xhr.responseText === 'string') {
+                        // Look for JSON pattern in the response
+                        var jsonMatch = xhr.responseText.match(/\{"success":(true|false).*?\}$/);
+                        if (jsonMatch) {
+                            try {
+                                actualResponse = JSON.parse(jsonMatch[0]);
+                                
+                                // If we successfully extracted JSON and it shows success, treat as success
+                                if (actualResponse && actualResponse.success) {
+                                    // Remove the row
+                                    $row.fadeOut(400, function() {
+                                        $(this).remove();
+                                        var $remainingRows = $('#the-list tr').not('.no-items');
+                                        if ($remainingRows.length === 0) {
+                                            $('#the-list').html('<tr class="no-items"><td colspan="6" style="text-align:center;padding:20px;color:#666;font-style:italic;">No sources found.</td></tr>');
+                                        }
+                                    });
+                                    
+                                    if (typeof WPNSNotices !== 'undefined') {
+                                        WPNSNotices.success('Source deleted successfully');
+                                    }
+                                    return;
+                                }
+                            } catch (e) {
+                                // Could not parse extracted JSON
+                            }
+                        }
+                    }
+                    
+                    // Error: AJAX error occurred during delete
+                    
+                    // Restore row appearance
+                    $row.css({'background-color': '', 'opacity': '1'});
+                    $button.prop('disabled', false).text('Delete');
+                    
+                    var errorMsg = 'Connection error: ' + (error || status || 'Unknown error');
+                    
+                    if (typeof WPNSNotices !== 'undefined') {
+                        WPNSNotices.error(errorMsg);
+                    } else {
+                        alert(errorMsg);
+                    }
                 }
             });
         }
@@ -564,121 +803,41 @@ window.WPNewsSource = window.WPNewsSource || {};
         }
     });
     
-    // Export configuration
-    $('#wpns-export-btn').on('click', function() {
-        $.ajax({
-            url: wpns_ajax.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'wpns_export_sources',
-                nonce: wpns_ajax.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    var blob = new Blob([response.data.data], {type: 'application/json'});
-                    var url = window.URL.createObjectURL(blob);
-                    var a = document.createElement('a');
-                    a.href = url;
-                    a.download = response.data.filename;
-                    document.body.appendChild(a);
-                    a.click();
-                    window.URL.revokeObjectURL(url);
-                    document.body.removeChild(a);
-                }
-            }
-        });
-    });
-    
-    // Import configuration
-    $('#wpns-import-btn').on('click', function() {
-        $('#wpns-import-file').click();
-    });
-    
-    $('#wpns-import-file').on('change', function(e) {
-        var file = e.target.files[0];
-        if (file) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                if (confirm('Are you sure you want to import these sources?')) {
-                    $.ajax({
-                        url: wpns_ajax.ajax_url,
-                        type: 'POST',
-                        data: {
-                            action: 'wpns_import_sources',
-                            nonce: wpns_ajax.nonce,
-                            import_data: e.target.result
-                        },
-                        success: function(response) {
-                            if (response.success) {
-                                alert(response.data);
-                                location.reload();
-                            } else {
-                                alert('Error: ' + response.data);
-                            }
-                        }
-                    });
-                }
-            };
-            reader.readAsText(file);
-        }
-    });
+    // Export/Import handlers removed - now handled in settings page to avoid duplication
     
     // Copy API endpoint to clipboard
     $(document).on('click', '.wpns-copy-endpoint', function() {
         var endpoint = $(this).data('endpoint');
-        
-        var $temp = $('<input>');
-        $('body').append($temp);
-        $temp.val(endpoint).select();
-        document.execCommand('copy');
-        $temp.remove();
-        
         var $this = $(this);
         var originalText = $this.text();
-        $this.text('Copied!');
-        setTimeout(function() {
-            $this.text(originalText);
-        }, 2000);
+
+        function showCopied() {
+            $this.text('Copied!');
+            setTimeout(function() {
+                $this.text(originalText);
+            }, 2000);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(endpoint).then(showCopied).catch(function() {
+                var $temp = $('<textarea>');
+                $('body').append($temp);
+                $temp.val(endpoint).select();
+                document.execCommand('copy');
+                $temp.remove();
+                showCopied();
+            });
+        } else {
+            var $temp = $('<textarea>');
+            $('body').append($temp);
+            $temp.val(endpoint).select();
+            document.execCommand('copy');
+            $temp.remove();
+            showCopied();
+        }
     });
     
-    // Check for updates button
-    $('#wpns-check-updates-btn').on('click', function() {
-        var $btn = $(this);
-        var $status = $('#wpns-update-status');
-        var originalText = $btn.html();
-        
-        $btn.prop('disabled', true).html('<span class="dashicons dashicons-update spin"></span> Checking...');
-        $status.empty();
-        
-        $.ajax({
-            url: wpns_ajax.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'wpns_check_updates',
-                nonce: wpns_ajax.nonce
-            },
-            success: function(response) {
-                $btn.prop('disabled', false).html(originalText);
-                
-                if (response.success) {
-                    if (response.data.has_update) {
-                        $status.html('<div class="notice notice-warning inline"><p><strong>Update Available!</strong><br>' + 
-                                   'Current: ' + response.data.current_version + ' → New: ' + response.data.new_version + '<br>' +
-                                   '<a href="' + admin_url('plugins.php') + '" class="button button-primary">Go to Updates</a></p></div>');
-                    } else {
-                        $status.html('<div class="notice notice-success inline"><p><strong>✓ Up to date!</strong><br>' + 
-                                   response.data.message + '</p></div>');
-                    }
-                } else {
-                    $status.html('<div class="notice notice-error inline"><p><strong>Error:</strong> ' + response.data + '</p></div>');
-                }
-            },
-            error: function() {
-                $btn.prop('disabled', false).html(originalText);
-                $status.html('<div class="notice notice-error inline"><p><strong>Error:</strong> Could not check for updates.</p></div>');
-            }
-        });
-    });
+    // Check for updates handler removed - now handled in settings page to avoid duplication
     
     // Enhanced form validation
     wpns.validateJSON = function(input) {
@@ -721,7 +880,6 @@ window.WPNewsSource = window.WPNewsSource || {};
 
     wpns.autoSave = function() {
         // Implementation for auto-save
-        console.log('Auto-saving...');
         $('.wpns-save-indicator').text('Auto-saved').addClass('success');
         setTimeout(() => {
             $('.wpns-save-indicator').fadeOut().remove();

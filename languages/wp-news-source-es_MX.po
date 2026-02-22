@@ -1,4 +1,4 @@
-# Spanish (Spain) translations for WP News Source
+# Spanish (Mexico) translations for WP News Source
 # Copyright (C) 2024 WP News Source
 # This file is distributed under the same license as the WP News Source package.
 msgid ""
@@ -8,8 +8,8 @@ msgstr ""
 "POT-Creation-Date: 2024-07-07 12:00+0000\n"
 "PO-Revision-Date: 2024-07-07 12:00+0000\n"
 "Last-Translator: \n"
-"Language-Team: Spanish (Spain)\n"
-"Language: es_ES\n"
+"Language-Team: Spanish (Mexico)\n"
+"Language: es_MX\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -23,13 +23,7 @@ msgid "All Sources"
 msgstr "Todas las Fuentes"
 
 msgid "Add New"
-msgstr "Añadir Nueva"
-
-msgid "Edit Source"
-msgstr "Editar Fuente"
-
-msgid "Update Source"
-msgstr "Actualizar Fuente"
+msgstr "Agregar Nueva"
 
 msgid "Statistics"
 msgstr "Estadísticas"
@@ -37,70 +31,12 @@ msgstr "Estadísticas"
 msgid "Settings"
 msgstr "Configuración"
 
-# List page translations
-msgid "Name"
-msgstr "Nombre"
-
-msgid "Type"
-msgstr "Tipo"
-
-msgid "Category"
-msgstr "Categoría"
-
-msgid "Tags"
-msgstr "Etiquetas"
-
-msgid "Auto-publish"
-msgstr "Auto-publicar"
-
-msgid "Actions"
-msgstr "Acciones"
-
-msgid "Edit"
-msgstr "Editar"
-
-msgid "Delete"
-msgstr "Eliminar"
-
-msgid "No category"
-msgstr "Sin categoría"
-
-msgid "No tags"
-msgstr "Sin etiquetas"
-
-msgid "Total sources: %d"
-msgstr "Total de fuentes: %d"
-
-msgid "API Endpoints for n8n"
-msgstr "Endpoints de API para n8n"
-
-msgid "Use these endpoints in your n8n workflow:"
-msgstr "Usa estos endpoints en tu flujo de trabajo de n8n:"
-
-msgid "Get complete mapping"
-msgstr "Obtener mapeo completo"
-
-msgid "Detect source (POST)"
-msgstr "Detectar fuente (POST)"
-
-msgid "List all sources"
-msgstr "Listar todas las fuentes"
-
-msgid "Action completed successfully."
-msgstr "Acción completada correctamente."
-
-msgid "You do not have permission to perform this action"
-msgstr "No tienes permisos para realizar esta acción"
-
-msgid "Source not found."
-msgstr "Fuente no encontrada."
-
-msgid "Unique identifier generated automatically from the source name."
-msgstr "Identificador único generado automáticamente a partir del nombre de la fuente."
-
 # Add Source Form
 msgid "Add New Source"
-msgstr "Añadir Nueva Fuente"
+msgstr "Agregar Nueva Fuente"
+
+msgid "Edit Source"
+msgstr "Editar Fuente"
 
 msgid "Source Name"
 msgstr "Nombre de la Fuente"
@@ -159,6 +95,24 @@ msgstr "Esta categoría se asignará automáticamente cuando se detecte esta fue
 msgid "Associated Tags"
 msgstr "Etiquetas Asociadas"
 
+msgid "(multiple allowed)"
+msgstr "(múltiples permitidas)"
+
+msgid "Type to search or create multiple tags..."
+msgstr "Escribe para buscar o crear múltiples etiquetas..."
+
+msgid "Select multiple tags that will be automatically assigned to posts from this source."
+msgstr "Selecciona múltiples etiquetas que se asignarán automáticamente a las publicaciones de esta fuente."
+
+msgid "How to use:"
+msgstr "Cómo usar:"
+
+msgid "Type to search existing tags, click to select, or press Enter to create new ones."
+msgstr "Escribe para buscar etiquetas existentes, haz clic para seleccionar, o presiona Enter para crear nuevas."
+
+msgid "tags selected"
+msgstr "etiquetas seleccionadas"
+
 msgid "Start typing to search tags..."
 msgstr "Comienza a escribir para buscar etiquetas..."
 
@@ -183,95 +137,85 @@ msgstr "URL para notificaciones cuando se detecte esta fuente. Útil para integr
 msgid "Advanced Settings"
 msgstr "Configuración Avanzada"
 
-msgid "Show advanced options"
-msgstr "Mostrar opciones avanzadas"
-
 msgid "Generate specific API Key for this source"
 msgstr "Generar API Key específica para esta fuente"
-
-msgid "Detection Rules (JSON)"
-msgstr "Reglas de Detección (JSON)"
-
-msgid "Advanced rules in JSON format for custom detection."
-msgstr "Reglas avanzadas en formato JSON para detección personalizada."
 
 msgid "Save Source"
 msgstr "Guardar Fuente"
 
+msgid "Update Source"
+msgstr "Actualizar Fuente"
+
 msgid "Cancel"
 msgstr "Cancelar"
+
+# List page
+msgid "Name"
+msgstr "Nombre"
+
+msgid "Type"
+msgstr "Tipo"
+
+msgid "Category"
+msgstr "Categoría"
+
+msgid "Tags"
+msgstr "Etiquetas"
+
+msgid "Auto-publish"
+msgstr "Auto-publicar"
+
+msgid "Actions"
+msgstr "Acciones"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Delete"
+msgstr "Eliminar"
+
+msgid "No sources found."
+msgstr "No se encontraron fuentes."
+
+msgid "No category"
+msgstr "Sin categoría"
+
+msgid "No tags"
+msgstr "Sin etiquetas"
+
+msgid "Total sources: %d"
+msgstr "Total de fuentes: %d"
+
+msgid "API Endpoints for n8n"
+msgstr "Endpoints de API para n8n"
+
+msgid "Use these endpoints in your n8n workflow:"
+msgstr "Usa estos endpoints en tu flujo de trabajo de n8n:"
+
+msgid "Get complete mapping"
+msgstr "Obtener mapeo completo"
+
+msgid "Detect source (POST)"
+msgstr "Detectar fuente (POST)"
+
+msgid "List all sources"
+msgstr "Listar todas las fuentes"
 
 # Messages
 msgid "Source saved successfully"
 msgstr "Fuente guardada correctamente"
 
-msgid "Error saving source"
-msgstr "Error al guardar la fuente"
+msgid "Action completed successfully."
+msgstr "Acción completada correctamente."
 
-msgid "Source deleted successfully"
-msgstr "Fuente eliminada correctamente"
+msgid "You do not have permission to access this page."
+msgstr "No tienes permisos para acceder a esta página."
 
-msgid "Error deleting source"
-msgstr "Error al eliminar la fuente"
+msgid "You do not have permission to perform this action"
+msgstr "No tienes permisos para realizar esta acción"
 
-msgid "No sources found."
-msgstr "No se encontraron fuentes."
-
-msgid "Are you sure you want to delete this source?"
-msgstr "¿Estás seguro de que quieres eliminar esta fuente?"
-
-msgid "Invalid JSON format in detection rules"
-msgstr "Formato JSON inválido en las reglas de detección"
-
-msgid "Configuration exported successfully"
-msgstr "Configuración exportada correctamente"
-
-msgid "Configuration imported successfully"
-msgstr "Configuración importada correctamente"
-
-msgid "Invalid import data"
-msgstr "Datos de importación inválidos"
-
-msgid "Successfully imported %d sources"
-msgstr "Se importaron %d fuentes correctamente"
-
-# API Messages
-msgid "No source detected"
-msgstr "No se detectó ninguna fuente"
-
-msgid "Source detected successfully"
-msgstr "Fuente detectada correctamente"
-
-msgid "Invalid API key"
-msgstr "API key inválida"
-
-msgid "Access denied"
-msgstr "Acceso denegado"
-
-# Statistics
-msgid "Total Sources"
-msgstr "Total de Fuentes"
-
-msgid "Total Detections"
-msgstr "Total de Detecciones"
-
-msgid "Average Detections"
-msgstr "Promedio de Detecciones"
-
-msgid "Top Sources"
-msgstr "Principales Fuentes"
-
-msgid "Detection History"
-msgstr "Historial de Detecciones"
-
-msgid "Last Detected"
-msgstr "Última Detección"
-
-msgid "Confidence"
-msgstr "Confianza"
-
-msgid "Method"
-msgstr "Método"
+msgid "Source not found."
+msgstr "Fuente no encontrada."
 
 # Enhanced UI Strings
 msgid "Basic Information"
@@ -292,11 +236,14 @@ msgstr "Publicación"
 msgid "Skip to main content"
 msgstr "Saltar al contenido principal"
 
+msgid "Quick Tips"
+msgstr "Consejos Rápidos"
+
 msgid "Use descriptive names for easy identification"
 msgstr "Usa nombres descriptivos para fácil identificación"
 
 msgid "Add relevant keywords for better AI detection"
-msgstr "Añade palabras clave relevantes para mejor detección IA"
+msgstr "Agrega palabras clave relevantes para mejor detección IA"
 
 msgid "Test detection with sample content first"
 msgstr "Prueba la detección con contenido de muestra primero"
@@ -313,6 +260,12 @@ msgstr "Una vez guardado, esta fuente estará disponible vía:"
 msgid "Click to copy endpoint URL"
 msgstr "Haz clic para copiar la URL del endpoint"
 
+msgid "Custom Detection Rules (JSON)"
+msgstr "Reglas de Detección Personalizadas (JSON)"
+
+msgid "Advanced rules in JSON format for custom detection."
+msgstr "Reglas avanzadas en formato JSON para detección personalizada."
+
 msgid "Available rule types:"
 msgstr "Tipos de reglas disponibles:"
 
@@ -322,24 +275,5 @@ msgstr "Crea una API key única que puede usarse específicamente para esta fuen
 msgid "Publishing behavior"
 msgstr "Comportamiento de publicación"
 
-msgid "Copied to clipboard!"
-msgstr "¡Copiado al portapapeles!"
-
-msgid "Failed to copy to clipboard"
-msgstr "Error al copiar al portapapeles"
-
-msgid "Please fill in all required fields"
-msgstr "Por favor completa todos los campos requeridos"
-
-msgid "Source saved successfully!"
-msgstr "¡Fuente guardada exitosamente!"
-
-msgid "Custom Detection Rules (JSON)"
-msgstr "Reglas de Detección Personalizadas (JSON)"
-
-# Permissions
-msgid "You do not have permission to access this page."
-msgstr "No tienes permisos para acceder a esta página."
-
-msgid "You do not have permission to perform this action."
-msgstr "No tienes permisos para realizar esta acción."
+msgid "Unique identifier generated automatically from the source name."
+msgstr "Identificador único generado automáticamente a partir del nombre de la fuente."

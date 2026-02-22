@@ -1,6 +1,6 @@
 <?php
 /**
- * Clase para manejar las operaciones de base de datos
+ * Class to handle database operations
  */
 class WP_News_Source_DB {
     
@@ -14,7 +14,7 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Obtiene todas las fuentes
+     * Get all sources
      */
     public function get_all_sources() {
         global $wpdb;
@@ -24,7 +24,49 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Obtiene una fuente por ID
+     * Get sources with pagination and optional type filter
+     */
+    public function get_sources_paginated($page = 1, $per_page = 20, $source_type = null) {
+        global $wpdb;
+
+        $offset = ($page - 1) * $per_page;
+
+        if ($source_type) {
+            $query = $wpdb->prepare(
+                "SELECT * FROM {$this->table_name} WHERE source_type = %s ORDER BY name ASC LIMIT %d OFFSET %d",
+                $source_type,
+                $per_page,
+                $offset
+            );
+        } else {
+            $query = $wpdb->prepare(
+                "SELECT * FROM {$this->table_name} ORDER BY name ASC LIMIT %d OFFSET %d",
+                $per_page,
+                $offset
+            );
+        }
+
+        return $wpdb->get_results($query);
+    }
+
+    /**
+     * Get total source count with optional type filter
+     */
+    public function get_sources_count($source_type = null) {
+        global $wpdb;
+
+        if ($source_type) {
+            return (int) $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$this->table_name} WHERE source_type = %s",
+                $source_type
+            ));
+        }
+
+        return (int) $wpdb->get_var("SELECT COUNT(*) FROM {$this->table_name}");
+    }
+
+    /**
+     * Get a source by ID
      */
     public function get_source($id) {
         global $wpdb;
@@ -34,7 +76,7 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Obtiene una fuente por slug
+     * Get a source by slug
      */
     public function get_source_by_slug($slug) {
         global $wpdb;
@@ -44,7 +86,7 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Busca fuentes por nombre
+     * Search sources by name
      */
     public function search_sources_by_name($name) {
         global $wpdb;
@@ -58,14 +100,14 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Inserta una nueva fuente
+     * Insert a new source
      */
     public function insert_source($data) {
         global $wpdb;
         
-        // Generar API key si se solicita
+        // Generate API key if requested
         if (isset($data['generate_api_key']) && $data['generate_api_key']) {
-            $data['api_key'] = wp_generate_password(32, false);
+            $data['api_key'] = wp_generate_password(WP_News_Source_Config::get('api_key_length'), false);
         }
         
         $result = $wpdb->insert(
@@ -73,7 +115,7 @@ class WP_News_Source_DB {
             array(
                 'name' => $data['name'],
                 'slug' => $data['slug'],
-                'source_type' => $data['source_type'],
+                'source_type' => isset($data['source_type']) ? $data['source_type'] : 'general',
                 'description' => isset($data['description']) ? $data['description'] : '',
                 'keywords' => isset($data['keywords']) ? $data['keywords'] : '',
                 'detection_rules' => isset($data['detection_rules']) ? $data['detection_rules'] : '',
@@ -93,7 +135,7 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Actualiza una fuente existente
+     * Update an existing source
      */
     public function update_source($id, $data) {
         global $wpdb;
@@ -101,7 +143,7 @@ class WP_News_Source_DB {
         $update_data = array(
             'name' => $data['name'],
             'slug' => $data['slug'],
-            'source_type' => $data['source_type'],
+            'source_type' => isset($data['source_type']) ? $data['source_type'] : 'general',
             'description' => isset($data['description']) ? $data['description'] : '',
             'keywords' => isset($data['keywords']) ? $data['keywords'] : '',
             'detection_rules' => isset($data['detection_rules']) ? $data['detection_rules'] : '',
@@ -113,17 +155,22 @@ class WP_News_Source_DB {
             'requires_review' => $data['requires_review'],
             'webhook_url' => isset($data['webhook_url']) ? $data['webhook_url'] : ''
         );
-        
-        // Solo actualizar API key si se proporciona nueva
+
+        // Only update API key if new one provided
         if (isset($data['api_key'])) {
             $update_data['api_key'] = $data['api_key'];
         }
-        
+
+        $format = array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%d', '%d', '%s');
+        if (isset($data['api_key'])) {
+            $format[] = '%s';
+        }
+
         $result = $wpdb->update(
             $this->table_name,
             $update_data,
             array('id' => $id),
-            array('%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%d', '%d', '%s'),
+            $format,
             array('%d')
         );
         
@@ -131,12 +178,12 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Elimina una fuente
+     * Delete a source
      */
     public function delete_source($id) {
         global $wpdb;
         
-        // Eliminar historial asociado
+        // Delete associated history
         $wpdb->delete(
             $this->history_table,
             array('source_id' => $id),
@@ -151,12 +198,12 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Registra una detección
+     * Log a detection
      */
     public function log_detection($source_id, $post_id = null, $confidence = 0, $method = 'keyword', $content = '') {
         global $wpdb;
         
-        // Registrar en historial
+        // Log to history
         $wpdb->insert(
             $this->history_table,
             array(
@@ -164,12 +211,12 @@ class WP_News_Source_DB {
                 'post_id' => $post_id,
                 'detection_confidence' => $confidence,
                 'detection_method' => $method,
-                'detected_content' => substr($content, 0, 500) // Solo primeros 500 chars
+                'detected_content' => substr($content, 0, WP_News_Source_Config::get('detected_content_max_length')) // Limit content length
             ),
             array('%d', '%d', '%f', '%s', '%s')
         );
         
-        // Actualizar contadores en la fuente
+        // Update source counters
         $wpdb->query($wpdb->prepare(
             "UPDATE {$this->table_name} 
              SET detection_count = detection_count + 1, 
@@ -180,9 +227,9 @@ class WP_News_Source_DB {
     }
     
     /**
-     * Obtiene historial de detecciones
+     * Get detection history
      */
-    public function get_detection_history($source_id = null, $limit = 50) {
+    public function get_detection_history($source_id = null, $limit = null) {
         global $wpdb;
         
         $query = "SELECT d.*, s.name as source_name 
@@ -193,7 +240,13 @@ class WP_News_Source_DB {
             $query .= $wpdb->prepare(" WHERE d.source_id = %d", $source_id);
         }
         
-        $query .= " ORDER BY d.created_at DESC LIMIT %d";
+        $query .= " ORDER BY d.created_at DESC";
+        
+        if ($limit === null) {
+            $limit = WP_News_Source_Config::get('search_limit_max');
+        }
+        
+        $query .= " LIMIT %d";
         
         return $wpdb->get_results($wpdb->prepare($query, $limit));
     }
@@ -225,149 +278,126 @@ class WP_News_Source_DB {
             unset($source->webhook_url);
         }
         
-        return json_encode($sources, JSON_PRETTY_PRINT);
+        // Return array, not JSON string - will be encoded by wp_send_json_success
+        return $sources;
     }
     
     /**
      * Importa fuentes desde JSON
      */
-    public function import_sources($json_data) {
+    public function import_sources($json_data, $options = array()) {
+        // Default options
+        $defaults = array(
+            'match_categories_by_name' => true,  // Try to match categories by name instead of ID
+            'skip_missing_categories' => false,   // Skip sources if category not found
+            'use_default_category' => false,      // Use default category if not found
+            'default_category_id' => 1            // Default category to use
+        );
+        $options = wp_parse_args($options, $defaults);
+        
+        // Handle double-encoded JSON (common issue with exports)
         $sources = json_decode($json_data, true);
+        
+        // Check for JSON decode errors
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            error_log('WP News Source Import: First decode error - ' . json_last_error_msg());
+            return false;
+        }
+        
+        // If first decode resulted in a string, it was double-encoded
+        if (is_string($sources)) {
+            $sources = json_decode($sources, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                error_log('WP News Source Import: Second decode error - ' . json_last_error_msg());
+                return false;
+            }
+        }
+        
         $imported = 0;
+        $skipped = 0;
         
         if (!is_array($sources)) {
+            error_log('WP News Source Import: Invalid data type - expected array, got ' . gettype($sources));
             return false;
         }
         
         foreach ($sources as $source) {
-            // Verificar si ya existe
+            // Skip if critical fields are missing
+            if (!isset($source['name']) || !isset($source['slug'])) {
+                error_log('WP News Source Import: Skipping source - missing required fields');
+                continue;
+            }
+            
+            // Check if already exists
             $existing = $this->get_source_by_slug($source['slug']);
             
             if (!$existing) {
-                $this->insert_source($source);
-                $imported++;
-            }
-        }
-        
-        return $imported;
-    }
-    
-    /**
-     * Detecta fuente usando IA/contexto mejorado
-     */
-    public function detect_source_intelligent($content) {
-        $sources = $this->get_all_sources();
-        $best_match = null;
-        $best_score = 0;
-        
-        foreach ($sources as $source) {
-            $score = 0;
-            
-            // 1. Búsqueda exacta del nombre (peso alto)
-            if (stripos($content, $source->name) !== false) {
-                $score += 50;
-            }
-            
-            // 2. Búsqueda de palabras clave (peso medio)
-            if (!empty($source->keywords)) {
-                $keywords = explode(',', $source->keywords);
-                foreach ($keywords as $keyword) {
-                    if (stripos($content, trim($keyword)) !== false) {
-                        $score += 20;
+                // Handle category mapping
+                $category_id = null;
+                $category_name = '';
+                
+                if ($options['match_categories_by_name'] && !empty($source['category_name'])) {
+                    // Try to find category by name
+                    $category = get_term_by('name', $source['category_name'], 'category');
+                    if ($category && !is_wp_error($category)) {
+                        $category_id = $category->term_id;
+                        $category_name = $category->name;
+                    }
+                } elseif (!empty($source['category_id'])) {
+                    // Use the provided category ID and verify it exists
+                    $category = get_category($source['category_id']);
+                    if ($category && !is_wp_error($category)) {
+                        $category_id = $source['category_id'];
+                        $category_name = $category->name;
                     }
                 }
-            }
-            
-            // 3. Análisis de descripción/contexto (peso variable)
-            if (!empty($source->description)) {
-                // Extraer frases clave de la descripción
-                $context_phrases = $this->extract_key_phrases($source->description);
-                foreach ($context_phrases as $phrase) {
-                    if (stripos($content, $phrase) !== false) {
-                        $score += 15;
+                
+                // Handle missing category
+                if (!$category_id) {
+                    if ($options['skip_missing_categories']) {
+                        error_log('WP News Source Import: Skipping source "' . $source['name'] . '" - category not found');
+                        $skipped++;
+                        continue;
+                    } elseif ($options['use_default_category']) {
+                        $category_id = $options['default_category_id'];
+                        $default_cat = get_category($category_id);
+                        $category_name = $default_cat ? $default_cat->name : '';
                     }
                 }
-            }
-            
-            // 4. Reglas de detección personalizadas
-            if (!empty($source->detection_rules)) {
-                $rules = json_decode($source->detection_rules, true);
-                if (is_array($rules)) {
-                    foreach ($rules as $rule) {
-                        if ($this->evaluate_rule($rule, $content)) {
-                            $score += $rule['weight'] ?? 10;
-                        }
-                    }
+                
+                // Clean up data for insert
+                $insert_data = array(
+                    'name' => $source['name'],
+                    'slug' => $source['slug'],
+                    'description' => isset($source['description']) ? $source['description'] : '',
+                    'keywords' => isset($source['keywords']) ? $source['keywords'] : '',
+                    'detection_rules' => isset($source['detection_rules']) ? $source['detection_rules'] : '',
+                    'category_id' => $category_id,
+                    'category_name' => $category_name,
+                    'tag_ids' => isset($source['tag_ids']) ? $source['tag_ids'] : '',
+                    'tag_names' => isset($source['tag_names']) ? $source['tag_names'] : '',
+                    'auto_publish' => isset($source['auto_publish']) ? $source['auto_publish'] : 0,
+                    'requires_review' => isset($source['requires_review']) ? $source['requires_review'] : 1,
+                    'webhook_url' => isset($source['webhook_url']) ? $source['webhook_url'] : '',
+                    'api_key' => '' // Don't import API keys for security
+                );
+                
+                $result = $this->insert_source($insert_data);
+                if ($result) {
+                    $imported++;
+                } else {
+                    error_log('WP News Source Import: Failed to insert source: ' . $source['name']);
                 }
             }
-            
-            if ($score > $best_score) {
-                $best_score = $score;
-                $best_match = $source;
-            }
         }
         
-        // Umbral mínimo de confianza (configurable)
-        $min_confidence = apply_filters('wpns_min_detection_confidence', 30);
-        
-        if ($best_score >= $min_confidence) {
-            return array(
-                'source' => $best_match,
-                'confidence' => min($best_score / 100, 1), // Normalizar a 0-1
-                'score' => $best_score
-            );
-        }
-        
-        return null;
+        return array(
+            'imported' => $imported,
+            'skipped' => $skipped,
+            'total' => count($sources)
+        );
     }
     
-    /**
-     * Extrae frases clave de un texto
-     */
-    private function extract_key_phrases($text) {
-        // Simplificado: extraer frases entre comillas o después de dos puntos
-        $phrases = array();
-        
-        // Buscar frases entre comillas
-        preg_match_all('/"([^"]+)"/', $text, $matches);
-        if (!empty($matches[1])) {
-            $phrases = array_merge($phrases, $matches[1]);
-        }
-        
-        // Buscar elementos de lista después de guiones
-        preg_match_all('/- (.+)$/m', $text, $matches);
-        if (!empty($matches[1])) {
-            $phrases = array_merge($phrases, $matches[1]);
-        }
-        
-        return array_unique($phrases);
-    }
-    
-    /**
-     * Evalúa una regla de detección
-     */
-    private function evaluate_rule($rule, $content) {
-        if (!isset($rule['type']) || !isset($rule['value'])) {
-            return false;
-        }
-        
-        switch ($rule['type']) {
-            case 'contains':
-                return stripos($content, $rule['value']) !== false;
-                
-            case 'regex':
-                return preg_match($rule['value'], $content) > 0;
-                
-            case 'starts_with':
-                return stripos($content, $rule['value']) === 0;
-                
-            case 'word_count_min':
-                return str_word_count($content) >= intval($rule['value']);
-                
-            default:
-                return false;
-        }
-    }
     
     /**
      * Obtiene el mapeo completo para n8n con mejoras
@@ -383,6 +413,7 @@ class WP_News_Source_DB {
                 'type' => $source->source_type,
                 'description' => $source->description,
                 'keywords' => !empty($source->keywords) ? explode(',', $source->keywords) : array(),
+                'detection_rules' => !empty($source->detection_rules) ? $source->detection_rules : '',
                 'category' => array(
                     'id' => $source->category_id,
                     'name' => $source->category_name

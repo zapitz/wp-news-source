@@ -40,6 +40,40 @@
     --wpns-radius-lg: 6px;
 }
 
+/* Ensure spinner visibility */
+.spinner.is-active {
+    visibility: visible !important;
+    display: inline-block !important;
+}
+
+/* ==========================================================================
+   Version Header
+   ========================================================================== */
+
+.wpns-admin-header {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 100;
+}
+
+.wpns-version-display {
+    display: inline-block;
+    padding: 6px 12px;
+    background: var(--wp-gray-100);
+    border: 1px solid var(--wp-border-color);
+    border-radius: var(--wpns-radius);
+    font-size: 13px;
+    color: var(--wp-gray-600);
+    font-weight: 500;
+}
+
+.wpns-version-display .version-number {
+    font-weight: 600;
+    color: var(--wp-gray-700);
+    margin-left: 4px;
+}
+
 /* ==========================================================================
    Base Styles
    ========================================================================== */
@@ -963,6 +997,195 @@
 .wpns-flex-center { justify-content: center; }
 .wpns-flex-between { justify-content: space-between; }
 .wpns-align-center { align-items: center; }
+
+/* ==========================================================================
+   Version Management
+   ========================================================================== */
+
+.wpns-version-card {
+    background: var(--wp-bg-white);
+    border: 1px solid var(--wp-border-color);
+    border-radius: var(--wpns-radius);
+    box-shadow: var(--wp-shadow-sm);
+    padding: 0;
+    margin-bottom: var(--wpns-spacing-2xl);
+    overflow: hidden;
+}
+
+.wpns-version-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--wpns-spacing-xl);
+    background: var(--wp-bg-light);
+    border-bottom: 1px solid var(--wp-border-color);
+}
+
+.wpns-version-info h3 {
+    margin: 0 0 var(--wpns-spacing-sm) 0;
+    color: var(--wp-gray-900);
+    font-size: 1.2em;
+}
+
+.wpns-version-number {
+    display: flex;
+    align-items: center;
+    gap: var(--wpns-spacing-md);
+}
+
+.version-badge {
+    display: inline-block;
+    padding: var(--wpns-spacing-sm) var(--wpns-spacing-lg);
+    background: var(--wp-admin-blue);
+    color: white;
+    border-radius: var(--wpns-radius);
+    font-size: 1.1em;
+    font-weight: 600;
+}
+
+.update-badge {
+    display: inline-block;
+    padding: var(--wpns-spacing-xs) var(--wpns-spacing-md);
+    border-radius: var(--wpns-radius-sm);
+    font-size: 0.85em;
+    font-weight: 500;
+    animation: wpnsPulse 2s ease-in-out infinite;
+}
+
+.update-badge.update-available {
+    background: var(--wp-warning-orange);
+    color: var(--wp-gray-900);
+}
+
+.update-badge.up-to-date {
+    background: var(--wp-success-green);
+    color: white;
+}
+
+.version-meta {
+    margin-top: var(--wpns-spacing-sm);
+    color: var(--wp-gray-600);
+    font-size: 0.9em;
+}
+
+.wpns-version-actions .button {
+    min-width: 150px;
+}
+
+.wpns-update-status {
+    padding: var(--wpns-spacing-lg);
+    background: var(--wp-bg-light);
+    border-bottom: 1px solid var(--wp-border-color);
+}
+
+.wpns-update-status .update-message {
+    padding: var(--wpns-spacing-md);
+    border-radius: var(--wpns-radius-sm);
+    margin: 0;
+}
+
+.wpns-update-status .notice-info {
+    background: #e7f5ff;
+    border-left: 4px solid var(--wp-admin-blue);
+    color: var(--wp-gray-700);
+}
+
+.wpns-update-status .notice-success {
+    background: #f0f9ff;
+    border-left: 4px solid var(--wp-success-green);
+    color: var(--wp-gray-700);
+}
+
+.wpns-update-status .notice-error {
+    background: #fee;
+    border-left: 4px solid var(--wp-error-red);
+    color: var(--wp-gray-700);
+}
+
+#wpns-version-details {
+    padding: var(--wpns-spacing-xl);
+}
+
+.version-changelog h4 {
+    margin-top: 0;
+    color: var(--wp-gray-900);
+    font-size: 1.1em;
+}
+
+#changelog-content {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: var(--wpns-spacing-md);
+    background: var(--wp-bg-light);
+    border: 1px solid var(--wp-border-color);
+    border-radius: var(--wpns-radius-sm);
+    font-size: 0.9em;
+    line-height: 1.6;
+}
+
+#changelog-content h3,
+#changelog-content h4 {
+    margin-top: var(--wpns-spacing-lg);
+    margin-bottom: var(--wpns-spacing-sm);
+    color: var(--wp-gray-900);
+}
+
+#changelog-content ul {
+    margin-left: var(--wpns-spacing-xl);
+    margin-top: var(--wpns-spacing-sm);
+}
+
+#changelog-content code {
+    background: var(--wp-bg-white);
+    padding: 2px 6px;
+    border-radius: var(--wpns-radius-sm);
+    font-size: 0.85em;
+    color: var(--wp-gray-700);
+}
+
+/* Version Management Table */
+.wpns-version-table {
+    margin-top: var(--wpns-spacing-2xl);
+}
+
+.wpns-version-selector {
+    display: flex;
+    align-items: center;
+    gap: var(--wpns-spacing-md);
+    flex-wrap: wrap;
+}
+
+.wpns-version-selector label {
+    font-weight: 500;
+    color: var(--wp-gray-700);
+}
+
+#wpns-version-select {
+    min-width: 250px;
+    padding: var(--wpns-spacing-sm) var(--wpns-spacing-md);
+}
+
+#wpns-rollback-btn {
+    min-width: 120px;
+}
+
+/* Responsive adjustments for version management */
+@media screen and (max-width: 768px) {
+    .wpns-version-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--wpns-spacing-lg);
+    }
+    
+    .wpns-version-selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    #wpns-version-select {
+        width: 100%;
+    }
+}
 
 /* ==========================================================================
    Form Validation States

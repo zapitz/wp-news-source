@@ -2,29 +2,35 @@
 /**
  * Plugin Name: WP News Source
  * Plugin URI: https://github.com/zapitz/wp-news-source
- * Description: Smart news source management with AI-powered detection for automated categorization and tagging. Perfect for n8n integration.
- * Version: 1.2.0
+ * Description: News source management for automated categorization and tagging. Perfect for n8n integration.
+ * Version: 2.6.0
  * Author: Ariel Urtaza
  * Author URI: https://urtaza.com
  * License: GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  * Text Domain: wp-news-source
  * Domain Path: /languages
+ * Update URI: https://github.com/zapitz/wp-news-source
  */
 
-// Si este archivo es llamado directamente, abortar.
+// If this file is called directly, abort.
 if (!defined('WPINC')) {
     die;
 }
 
-// Define constantes del plugin
-define('WP_NEWS_SOURCE_VERSION', '1.2.0');
+// Emergency performance fix - include if exists
+if (file_exists(plugin_dir_path(__FILE__) . 'emergency-config.php')) {
+    require_once plugin_dir_path(__FILE__) . 'emergency-config.php';
+}
+
+// Define plugin constants
+define('WP_NEWS_SOURCE_VERSION', '2.6.0');
 define('WP_NEWS_SOURCE_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WP_NEWS_SOURCE_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('WP_NEWS_SOURCE_PLUGIN_BASENAME', plugin_basename(__FILE__));
 
 /**
- * Código que se ejecuta durante la activación del plugin
+ * Code executed during plugin activation
  */
 function activate_wp_news_source() {
     require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-activator.php';
@@ -32,7 +38,7 @@ function activate_wp_news_source() {
 }
 
 /**
- * Código que se ejecuta durante la desactivación del plugin
+ * Code executed during plugin deactivation
  */
 function deactivate_wp_news_source() {
     require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-deactivator.php';
@@ -43,13 +49,13 @@ register_activation_hook(__FILE__, 'activate_wp_news_source');
 register_deactivation_hook(__FILE__, 'deactivate_wp_news_source');
 
 /**
- * Incluye las clases principales del plugin
+ * Include the core plugin classes
  */
 require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source.php';
 require_once WP_NEWS_SOURCE_PLUGIN_DIR . 'includes/class-wp-news-source-updater.php';
 
 /**
- * Inicia la ejecución del plugin
+ * Begin plugin execution
  */
 function run_wp_news_source() {
     $plugin = new WP_News_Source();

@@ -1,166 +1,415 @@
 <?php
 /**
- * Página de estadísticas
+ * Statistics page
  */
 
-// Verificar permisos
+// Check permissions
 if (!current_user_can('view_news_source_stats')) {
-    wp_die(__('No tienes permisos para acceder a esta página.', 'wp-news-source'));
+    wp_die(__('You do not have permission to access this page.', 'wp-news-source'));
 }
 
+// Get statistics
 $db = new WP_News_Source_DB();
-$stats = $db->get_source_stats();
-$history = $db->get_detection_history(null, 20);
 $sources = $db->get_all_sources();
+$stats = $db->get_source_stats();
+$recent_detections = $db->get_detection_history(null, 20);
+
+// Calculate additional stats
+$total_categories = 0;
+$total_tags = 0;
+$auto_publish_count = 0;
+$sources_by_type = array();
+
+foreach ($sources as $source) {
+    if ($source->category_id) $total_categories++;
+    if (!empty($source->tag_ids)) {
+        $tags = explode(',', $source->tag_ids);
+        $total_tags += count($tags);
+    }
+    if ($source->auto_publish) $auto_publish_count++;
+    
+    if (!isset($sources_by_type[$source->source_type])) {
+        $sources_by_type[$source->source_type] = 0;
+    }
+    $sources_by_type[$source->source_type]++;
+}
+
+// Get WordPress stats
+$post_count = wp_count_posts();
+$published_posts = $post_count->publish;
+$draft_posts = $post_count->draft;
 ?>
 
 <div class="wrap">
     <h1><?php echo esc_html(get_admin_page_title()); ?></h1>
     
-    <div class="wpns-stats-grid">
-        <div class="wpns-stat-box">
-            <h3><?php _e('Total de Fuentes', 'wp-news-source'); ?></h3>
-            <div class="wpns-stat-number"><?php echo intval($stats->total_sources); ?></div>
-        </div>
-        
-        <div class="wpns-stat-box">
-            <h3><?php _e('Total de Detecciones', 'wp-news-source'); ?></h3>
-            <div class="wpns-stat-number"><?php echo intval($stats->total_detections); ?></div>
-        </div>
-        
-        <div class="wpns-stat-box">
-            <h3><?php _e('Promedio por Fuente', 'wp-news-source'); ?></h3>
-            <div class="wpns-stat-number"><?php echo number_format($stats->avg_detections, 1); ?></div>
-        </div>
-    </div>
-    
-    <h2><?php _e('Top Fuentes por Detecciones', 'wp-news-source'); ?></h2>
-    <table class="wp-list-table widefat fixed striped">
-        <thead>
-            <tr>
-                <th><?php _e('Fuente', 'wp-news-source'); ?></th>
-                <th><?php _e('Tipo', 'wp-news-source'); ?></th>
-                <th><?php _e('Detecciones', 'wp-news-source'); ?></th>
-                <th><?php _e('Última Detección', 'wp-news-source'); ?></th>
-                <th><?php _e('Confianza Promedio', 'wp-news-source'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php 
-            $top_sources = array();
-            foreach ($sources as $source) {
-                if ($source->detection_count > 0) {
-                    $top_sources[] = $source;
-                }
-            }
-            usort($top_sources, function($a, $b) {
-                return $b->detection_count - $a->detection_count;
-            });
-            $top_sources = array_slice($top_sources, 0, 10);
+    <div class="wpns-stats-container">
+        <!-- Overview Cards -->
+        <div class="wpns-stats-grid">
+            <div class="wpns-stat-card">
+                <div class="wpns-stat-icon">
+                    <span class="dashicons dashicons-networking"></span>
+                </div>
+                <div class="wpns-stat-content">
+                    <h3><?php echo intval($stats->total_sources); ?></h3>
+                    <p><?php _e('Total Sources', 'wp-news-source'); ?></p>
+                </div>
+            </div>
             
-            foreach ($top_sources as $source): 
+            <div class="wpns-stat-card">
+                <div class="wpns-stat-icon">
+                    <span class="dashicons dashicons-search"></span>
+                </div>
+                <div class="wpns-stat-content">
+                    <h3><?php echo intval($stats->total_detections); ?></h3>
+                    <p><?php _e('Total Detections', 'wp-news-source'); ?></p>
+                </div>
+            </div>
+            
+            <div class="wpns-stat-card">
+                <div class="wpns-stat-icon">
+                    <span class="dashicons dashicons-yes-alt"></span>
+                </div>
+                <div class="wpns-stat-content">
+                    <h3><?php echo $auto_publish_count; ?></h3>
+                    <p><?php _e('Auto-publish Sources', 'wp-news-source'); ?></p>
+                </div>
+            </div>
+            
+            <div class="wpns-stat-card">
+                <div class="wpns-stat-icon">
+                    <span class="dashicons dashicons-admin-post"></span>
+                </div>
+                <div class="wpns-stat-content">
+                    <h3><?php echo $published_posts; ?></h3>
+                    <p><?php _e('Published Posts', 'wp-news-source'); ?></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Source Types Distribution -->
+        <div class="wpns-stats-section">
+            <h2><?php _e('Sources by Type', 'wp-news-source'); ?></h2>
+            <div class="wpns-type-distribution">
+                <?php 
+                $types = array(
+                    'government' => __('Government', 'wp-news-source'),
+                    'company' => __('Company', 'wp-news-source'),
+                    'ngo' => __('NGO', 'wp-news-source'),
+                    'general' => __('General', 'wp-news-source')
+                );
+                foreach ($types as $type => $label): 
+                    $count = isset($sources_by_type[$type]) ? $sources_by_type[$type] : 0;
+                    $percentage = $stats->total_sources > 0 ? round(($count / $stats->total_sources) * 100) : 0;
+                ?>
+                    <div class="wpns-type-item">
+                        <div class="wpns-type-label">
+                            <span><?php echo esc_html($label); ?></span>
+                            <span><?php echo $count; ?></span>
+                        </div>
+                        <div class="wpns-type-bar">
+                            <div class="wpns-type-progress" style="width: <?php echo $percentage; ?>%"></div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        
+        <!-- Recent Detections -->
+        <div class="wpns-stats-section">
+            <h2><?php _e('Recent Detections', 'wp-news-source'); ?></h2>
+            <?php if (empty($recent_detections)): ?>
+                <p class="description"><?php _e('No detections recorded yet.', 'wp-news-source'); ?></p>
+            <?php else: ?>
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <th><?php _e('Source', 'wp-news-source'); ?></th>
+                            <th><?php _e('Method', 'wp-news-source'); ?></th>
+                            <th><?php _e('Confidence', 'wp-news-source'); ?></th>
+                            <th><?php _e('Content Preview', 'wp-news-source'); ?></th>
+                            <th><?php _e('Date', 'wp-news-source'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recent_detections as $detection): ?>
+                            <tr>
+                                <td>
+                                    <strong><?php echo esc_html($detection->source_name); ?></strong>
+                                </td>
+                                <td>
+                                    <?php echo esc_html($detection->detection_method); ?>
+                                </td>
+                                <td>
+                                    <span class="wpns-confidence-badge wpns-confidence-<?php echo $detection->detection_confidence >= 80 ? 'high' : ($detection->detection_confidence >= 50 ? 'medium' : 'low'); ?>">
+                                        <?php echo round($detection->detection_confidence); ?>%
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="wpns-content-preview">
+                                        <?php echo esc_html(substr($detection->detected_content, 0, 100)); ?>...
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php echo esc_html(human_time_diff(strtotime($detection->created_at))) . ' ' . __('ago', 'wp-news-source'); ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+        
+        <!-- Top Performing Sources -->
+        <div class="wpns-stats-section">
+            <h2><?php _e('Top Performing Sources', 'wp-news-source'); ?></h2>
+            <?php 
+            $top_sources = array_filter($sources, function($s) { return $s->detection_count > 0; });
+            usort($top_sources, function($a, $b) { return $b->detection_count - $a->detection_count; });
+            $top_sources = array_slice($top_sources, 0, 10);
             ?>
-                <tr>
-                    <td><strong><?php echo esc_html($source->name); ?></strong></td>
-                    <td><?php echo esc_html($source->source_type); ?></td>
-                    <td><?php echo intval($source->detection_count); ?></td>
-                    <td>
-                        <?php 
-                        if ($source->last_detected) {
-                            echo esc_html(human_time_diff(strtotime($source->last_detected), current_time('timestamp'))) . ' ' . __('atrás', 'wp-news-source');
-                        } else {
-                            echo __('Nunca', 'wp-news-source');
-                        }
-                        ?>
-                    </td>
-                    <td>-</td>
-                </tr>
-            <?php endforeach; ?>
             
             <?php if (empty($top_sources)): ?>
-                <tr>
-                    <td colspan="5"><?php _e('No hay detecciones registradas aún.', 'wp-news-source'); ?></td>
-                </tr>
+                <p class="description"><?php _e('No sources have detections yet.', 'wp-news-source'); ?></p>
+            <?php else: ?>
+                <div class="wpns-top-sources">
+                    <?php foreach ($top_sources as $source): ?>
+                        <div class="wpns-source-stat">
+                            <div class="wpns-source-info">
+                                <strong><?php echo esc_html($source->name); ?></strong>
+                                <span class="wpns-source-type"><?php echo esc_html($source->source_type); ?></span>
+                            </div>
+                            <div class="wpns-source-count">
+                                <?php echo intval($source->detection_count); ?> <?php _e('detections', 'wp-news-source'); ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             <?php endif; ?>
-        </tbody>
-    </table>
-    
-    <h2><?php _e('Historial de Detecciones Recientes', 'wp-news-source'); ?></h2>
-    <table class="wp-list-table widefat fixed striped">
-        <thead>
-            <tr>
-                <th><?php _e('Fecha', 'wp-news-source'); ?></th>
-                <th><?php _e('Fuente', 'wp-news-source'); ?></th>
-                <th><?php _e('Método', 'wp-news-source'); ?></th>
-                <th><?php _e('Confianza', 'wp-news-source'); ?></th>
-                <th><?php _e('Vista Previa', 'wp-news-source'); ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($history as $detection): ?>
-                <tr>
-                    <td><?php echo esc_html(human_time_diff(strtotime($detection->created_at), current_time('timestamp'))) . ' ' . __('atrás', 'wp-news-source'); ?></td>
-                    <td><?php echo esc_html($detection->source_name); ?></td>
-                    <td>
-                        <?php 
-                        $methods = array(
-                            'keyword' => __('Palabra clave', 'wp-news-source'),
-                            'name_match' => __('Nombre exacto', 'wp-news-source'),
-                            'ai_context' => __('IA/Contexto', 'wp-news-source')
-                        );
-                        echo esc_html($methods[$detection->detection_method] ?? $detection->detection_method);
-                        ?>
-                    </td>
-                    <td><?php echo number_format($detection->detection_confidence * 100, 0); ?>%</td>
-                    <td>
-                        <span class="wpns-preview" title="<?php echo esc_attr($detection->detected_content); ?>">
-                            <?php echo esc_html(substr($detection->detected_content, 0, 50)) . '...'; ?>
-                        </span>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            
-            <?php if (empty($history)): ?>
-                <tr>
-                    <td colspan="5"><?php _e('No hay historial de detecciones.', 'wp-news-source'); ?></td>
-                </tr>
-            <?php endif; ?>
-        </tbody>
-    </table>
+        </div>
+        
+        <!-- Export Options -->
+        <div class="wpns-stats-section">
+            <h2><?php _e('Export Data', 'wp-news-source'); ?></h2>
+            <p><?php _e('Export statistics and detection history for analysis.', 'wp-news-source'); ?></p>
+            <button class="button" id="wpns-export-stats">
+                <span class="dashicons dashicons-download"></span>
+                <?php _e('Export Statistics CSV', 'wp-news-source'); ?>
+            </button>
+            <button class="button" id="wpns-export-history">
+                <span class="dashicons dashicons-download"></span>
+                <?php _e('Export Detection History CSV', 'wp-news-source'); ?>
+            </button>
+        </div>
+    </div>
 </div>
 
 <style>
+/* Statistics Styles */
+.wpns-stats-container {
+    max-width: 1200px;
+    margin-top: 20px;
+}
+
+/* Stats Grid */
 .wpns-stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
-    margin: 20px 0;
+    margin-bottom: 40px;
 }
 
-.wpns-stat-box {
+.wpns-stat-card {
     background: #fff;
     border: 1px solid #ddd;
-    padding: 20px;
-    text-align: center;
     border-radius: 5px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.wpns-stat-box h3 {
-    margin: 0 0 10px 0;
+.wpns-stat-icon {
+    margin-right: 20px;
+}
+
+.wpns-stat-icon .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    color: #2271b1;
+}
+
+.wpns-stat-content h3 {
+    margin: 0;
+    font-size: 32px;
+    color: #1d2327;
+}
+
+.wpns-stat-content p {
+    margin: 5px 0 0;
     color: #666;
-    font-size: 14px;
-    font-weight: normal;
 }
 
-.wpns-stat-number {
-    font-size: 36px;
-    font-weight: bold;
-    color: #0073aa;
+/* Stats Sections */
+.wpns-stats-section {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 25px;
+    margin-bottom: 30px;
 }
 
-.wpns-preview {
-    color: #666;
+.wpns-stats-section h2 {
+    margin-top: 0;
+}
+
+/* Type Distribution */
+.wpns-type-distribution {
+    max-width: 600px;
+}
+
+.wpns-type-item {
+    margin-bottom: 15px;
+}
+
+.wpns-type-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.wpns-type-bar {
+    background: #f0f0f1;
+    height: 20px;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.wpns-type-progress {
+    background: #2271b1;
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+/* Confidence Badges */
+.wpns-confidence-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
     font-size: 12px;
-    cursor: help;
+    font-weight: 600;
+}
+
+.wpns-confidence-high {
+    background: #d4f4dd;
+    color: #0a7b3e;
+}
+
+.wpns-confidence-medium {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.wpns-confidence-low {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+/* Content Preview */
+.wpns-content-preview {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Top Sources */
+.wpns-top-sources {
+    max-width: 800px;
+}
+
+.wpns-source-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.wpns-source-stat:last-child {
+    border-bottom: none;
+}
+
+.wpns-source-info strong {
+    display: block;
+}
+
+.wpns-source-type {
+    font-size: 12px;
+    color: #666;
+}
+
+.wpns-source-count {
+    color: #2271b1;
+    font-weight: 600;
 }
 </style>
+
+<script>
+jQuery(document).ready(function($) {
+    // Export statistics
+    $('#wpns-export-stats').on('click', function() {
+        // Create CSV content
+        var csv = 'Metric,Value\n';
+        csv += 'Total Sources,<?php echo intval($stats->total_sources); ?>\n';
+        csv += 'Total Detections,<?php echo intval($stats->total_detections); ?>\n';
+        csv += 'Average Detections per Source,<?php echo round($stats->avg_detections, 2); ?>\n';
+        csv += 'Auto-publish Sources,<?php echo $auto_publish_count; ?>\n';
+        csv += 'Published Posts,<?php echo $published_posts; ?>\n';
+        csv += 'Draft Posts,<?php echo $draft_posts; ?>\n';
+        
+        // Add source type breakdown
+        csv += '\nSource Type,Count\n';
+        <?php foreach ($types as $type => $label): ?>
+        csv += '<?php echo $label; ?>,<?php echo isset($sources_by_type[$type]) ? $sources_by_type[$type] : 0; ?>\n';
+        <?php endforeach; ?>
+        
+        // Download CSV
+        var blob = new Blob([csv], { type: 'text/csv' });
+        var url = window.URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'wp-news-source-stats-' + new Date().toISOString().split('T')[0] + '.csv';
+        a.click();
+        window.URL.revokeObjectURL(url);
+    });
+    
+    // Export detection history
+    $('#wpns-export-history').on('click', function() {
+        // Fetch all detection history via AJAX
+        $.post(ajaxurl, {
+            action: 'wpns_export_history',
+            nonce: WPNewsSource.nonce
+        }, function(response) {
+            if (response.success) {
+                var csv = 'Date,Source,Method,Confidence,Content Preview\n';
+                response.data.forEach(function(detection) {
+                    csv += '"' + detection.created_at + '",';
+                    csv += '"' + detection.source_name + '",';
+                    csv += '"' + detection.detection_method + '",';
+                    csv += detection.detection_confidence + ',';
+                    csv += '"' + detection.detected_content.substring(0, 100).replace(/"/g, '""') + '"\n';
+                });
+                
+                // Download CSV
+                var blob = new Blob([csv], { type: 'text/csv' });
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'wp-news-source-history-' + new Date().toISOString().split('T')[0] + '.csv';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            }
+        });
+    });
+});
+</script>
